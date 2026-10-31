@@ -1,0 +1,6 @@
+*.ino text eol=lf
+*.scad text eol=lf
+*.md text eol=lf
+*.stl binary
+*.pdf binary
+*.png binary

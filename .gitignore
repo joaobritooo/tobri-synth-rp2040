@@ -1,0 +1,15 @@
+# gerados pelo emulador e pelos scripts
+tools/emu/sketch_pp.cpp
+tools/emu/shots/
+tools/emu/png/
+tools/emu/*.exe
+tools/emu/emu
+tools/emu/build.log
+tools/fig/
+tools/fig_w/
+__pycache__/
+# build do Arduino
+build/
+*.uf2
+*.elf
+*.bin
