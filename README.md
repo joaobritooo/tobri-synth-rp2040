@@ -95,3 +95,7 @@ case/       caixa Eurorack (OpenSCAD + STL)
 docs/       manual, esquema de ligação e imagens
 tools/      emulador da tela e geradores dos PDFs
 ```
+
+## Licença
+
+[MIT](LICENSE): pode usar, modificar e distribuir, inclusive comercialmente, mantendo o aviso de copyright.
