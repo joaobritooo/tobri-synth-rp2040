@@ -9,6 +9,8 @@ USBDeviceStub USBDevice;
 bool emuTouch = false;
 int emuTX = 0, emuTY = 0;
 void (*emuDelayHook)() = nullptr;
+int emuPin[32] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+void (*emuIsr[32])() = {};
 
 TS_Point XPT2046_Touchscreen::getPoint() {
     TS_Point p;

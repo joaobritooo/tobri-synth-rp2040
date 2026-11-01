@@ -522,14 +522,14 @@ def build():
         '<b>Barra bipolar</b>: arraste para a direita (+) ou esquerda (-).',
         'Toque de novo na célula já selecionada para zerá-la.'], title='Página 2 · MATRIX',
         note='Exemplo da imagem: o LFO abre o filtro (+60) e o envelope de amplitude baixa um pouco o pitch (-35).'))
-    story.append(shot_block('mod3', [(160, 52), (160, 95), (160, 130), (160, 198), (160, 163)], [
+    story.append(shot_block('mod3', [(160, 52), (160, 95), (160, 130), (160, 163), (160, 198)], [
         '<b>POLY</b>: até 4 notas. <b>MONO</b>: 1 nota, envelope reinicia. '
         '<b>LEGATO</b>: notas ligadas deslizam sem reiniciar.',
         '<b>GLIDE TIME</b>: tempo do portamento (também vale para o SLIDE do sequenciador).',
         'Resumo dos modos.',
-        '<b>CPU LOAD</b>: uso do processador de áudio. Acima de ~85% reduza unison ou efeitos.',
         '<b>Teste do encoder</b>: CLK e DT mudam ao girar e STEPS conta; SW vai a 0 só quando você aperta. '
-        'NOISE conta apertos ignorados por terem vindo durante o giro.'],
+        'NOISE conta apertos ignorados por terem vindo durante o giro.',
+        '<b>CPU LOAD</b>: uso do processador de áudio. Acima de ~85% reduza unison ou efeitos.'],
         title='Página 3 · VOICE/GLIDE'))
     story.append(CondPageBreak(110 * mm))
 
