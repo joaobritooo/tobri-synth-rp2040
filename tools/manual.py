@@ -311,7 +311,7 @@ def on_page(c, doc):
     c.line(18 * mm, 14 * mm, A4[0] - 18 * mm, 14 * mm)
     c.setFont('UI', 8)
     c.setFillColor(SUB)
-    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v10')
+    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v11')
     c.drawRightString(A4[0] - 18 * mm, 9.5 * mm, str(doc.page))
     c.restoreState()
 
@@ -331,7 +331,7 @@ def on_cover(c, doc):
     c.setFont('UI', 10.5)
     y = A4[1] - 74 * mm
     for line in ('Sintetizador polifônico de 4 vozes com RP2040, tela touch de 3,2"',
-                 'USB MIDI e encoder · firmware v10',
+                 'USB MIDI e encoder · firmware v11',
                  '7 abas, 23 telas: osciladores, wavetable, FM, envelopes, filtro, LFO,',
                  'matriz de modulação, sequenciador de 16 passos, 4 efeitos e 8 presets'):
         c.drawString(20 * mm, y, line)
@@ -362,8 +362,9 @@ def build():
         ['3', '<b>Toque notas</b>: por um teclado/controlador USB MIDI ligado no computador (o synth aparece '
               'como dispositivo MIDI "RP2040 Synth"), ou sem nada externo: abra a aba <b>SEQ</b> e toque <b>PLAY</b> '
               '(ou dê um clique no encoder).'],
-        ['4', '<b>Escolha um som</b> na aba <b>PRE</b>: toque num dos 8 slots (INIT, ACID BASS, PWM LEAD, SUPER PAD, '
-              'PLUCK, SUB BASS, KICK ZAP, WOBBLE).'],
+        ['4', '<b>Escolha um som</b> na aba <b>PRE</b>: toque num dos 8 slots de minimal / deep tech '
+              '(ROLLER, DUB CHORD, HYPNO PLCK, RUMBLE, BLIP, DEEP PAD, ACID TOOL, METAL PERC). Cada um já carrega '
+              'um groove no sequenciador: toque <b>PLAY</b> na aba SEQ para ouvir.'],
         ['5', '<b>Gire o encoder</b> enquanto toca: ele abre e fecha o filtro em qualquer tela.'],
     ]
     story.append(legend([s[1] for s in steps]))
@@ -666,9 +667,35 @@ def build():
              'O áudio continua tocando durante a calibração.'))
     story.append(CondPageBreak(110 * mm))
 
-    # ----- 10. receitas
-    story += section('11 · RECEITAS', 'Sons rápidos para começar',
-                     'Parta do preset <b>INIT</b> (PRE p1, slot 1) e ajuste como abaixo.')
+    # ----- 10. presets de fábrica
+    story += section('11 · PRESETS', 'Presets de fábrica: minimal / deep tech',
+                     'Os 8 presets vêm com um groove em <b>Sol menor</b> no padrão A do sequenciador (com PTN ON), '
+                     'BPM entre 120 e 126 e um pouco de swing. Gire o encoder durante o PLAY para abrir e fechar o filtro.')
+    story.append(table([
+        ['Slot', 'Som', 'O que é'],
+        ['1 · ROLLER', 'Baixo rolado', 'Serra com sub senoidal, filtro 24 dB fechado, MONO com glide curto. Groove de '
+                                        'semicolcheias que "pula" o tempo forte, para encaixar entre os kicks.'],
+        ['2 · DUB CHORD', 'Stab de dub techno', 'Serra + OSC2 uma quinta acima, decay curto, delay de 3/16 com bastante '
+                                                 'feedback, reverb grande e chorus. Poucas notas: o delay faz o resto.'],
+        ['3 · HYPNO PLCK', 'Pluck hipnótico', 'Senoide com FM (ratio 3,5) e LFO em 1/4 no filtro; arpejo com '
+                                               'probabilidade, então cada volta é um pouco diferente.'],
+        ['4 · RUMBLE', 'Kick + rumble', 'Senoide com envelope de pitch (vira kick) e reverb escuro e longo. Quatro no '
+                                         'chão; use como base ou com o kick da sua bateria.'],
+        ['5 · BLIP', 'Blip minimal', 'Quadrada curta em passa-banda, um pouco de bitcrusher e delay de 1/16. Notas '
+                                      'esparsas, várias com probabilidade.'],
+        ['6 · DEEP PAD', 'Pad escuro', 'Wavetable VOCAL varrida pelo LFO (2 compassos), OSC2 na quinta, chorus e reverb '
+                                        'grande. Duas notas longas por padrão.'],
+        ['7 · ACID TOOL', 'Acid profundo', '303 em 24 dB com ressonância alta, accent forte e slides (modo LEGATO).'],
+        ['8 · METAL PERC', 'Percussão metálica', 'Quadrada com ring mod (OSC2 +19), passa-alta e bitcrusher leve: '
+                                                  'um "hat" metálico nos contratempos, com ratchet.'],
+    ], [30 * mm, 32 * mm, W - 62 * mm]))
+    story.append(tip('Se você já gravou algo num slot, ele continua com o seu som. Para ver o preset novo, toque '
+                     '<b>FACTORY</b> duas vezes nesse slot.', 'ATENÇÃO'))
+    story.append(CondPageBreak(90 * mm))
+
+    # ----- 11. receitas
+    story += section('12 · RECEITAS', 'Sons rápidos para começar',
+                     'Parta de qualquer preset e ajuste como abaixo.')
     recipes = [
         ['Som', 'Como fazer'],
         ['Baixo ácido (303)', 'OSC p1: SAW · MOD p3: MONO, GLIDE ~60 ms · FLT p1: CUTOFF 30%, RESSONÂNCIA 70% · '
@@ -685,7 +712,7 @@ def build():
     story.append(table(recipes, [36 * mm, W - 36 * mm]))
     story.append(Spacer(1, 10))
 
-    story += section('12 · PROBLEMAS', 'Solução de problemas')
+    story += section('13 · PROBLEMAS', 'Solução de problemas')
     story.append(table([
         ['Sintoma', 'O que fazer'],
         ['Erro ao compilar "Adafruit_USBD_MIDI does not name a type"', 'Arduino IDE: <b>Ferramentas &gt; USB Stack &gt; '

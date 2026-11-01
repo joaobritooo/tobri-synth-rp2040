@@ -34,7 +34,7 @@ Sintetizador polifônico de 4 vozes num Raspberry Pi Pico (RP2040). Tem tela tou
   - sync por MIDI clock;
   - UNDO.
 - **Efeitos:** bitcrusher, chorus, delay ping-pong e reverb.
-- **Presets e MIDI:** 8 presets com nome e um **RANDOM inteligente** (sorteia BASS, LEAD, PAD, PLUCK ou KEYS, com UNDO/REDO). CC learn, Program Change e pads de controlador como passos do sequenciador.
+- **Presets e MIDI:** 8 presets de fábrica de minimal / deep tech, cada um com groove no sequenciador, nomes editáveis e um **RANDOM inteligente** (sorteia BASS, LEAD, PAD, PLUCK ou KEYS, com UNDO/REDO). CC learn, Program Change e pads de controlador como passos do sequenciador.
 - **Interface:**
   - 7 abas; tocar na aba aberta mostra o menu com o nome de cada página;
   - toque filtrado, ajuste FINE e toque duplo para voltar ao valor padrão;

@@ -17,6 +17,8 @@
    v7: toque na aba ativa abre o MENU das subpáginas (com nomes). ENV agora tem
          AMP / FILTER ENV / PITCH ENV; FLT = FILTER (cutoff, reso, drive) + MODE
          (tipo, inclinação, wavefolder); MOD = LFO / MATRIX / VOICES
+   v11: presets de fábrica minimal / deep tech (ROLLER, DUB CHORD, HYPNO PLCK, RUMBLE,
+         BLIP, DEEP PAD, ACID TOOL, METAL PERC), cada um com groove próprio em Sol menor
    v10: botão do encoder ignora "apertos" que acontecem enquanto o eixo gira (ruído do
          SW); teste do encoder ao vivo em MOD > VOICE/GLIDE
    v9: abertura com as cores do menu + transição (varredura e abas caindo)
@@ -1856,15 +1858,52 @@ void presetRedrawUI();
 // fm: bits 0-1 = tipo do filtro (0 LP, 1 BP, 2 HP); bit 2 (valor 4) = 24 dB
 //    nome         onda          A     D     S     R     cut   res   fAmt  fAtt  fDec  lfoR  lfoD  det   vol    dlyT   dlyFb dlyMix revS  revD  revM   pwm   pwmM  sub   pAmt  pDec  vel    drive fm vm glide
 const FactoryPreset FACTORY[PRESET_COUNT] = {
-    {"INIT",      WAVE_SAW,      0.010f,0.15f,0.70f,0.25f, 0.60f,0.20f,0.50f,0.010f,0.20f, 2.0f,0.00f,0.50f,0.80f, 250.0f,0.40f,0.25f, 0.60f,0.40f,0.20f, 0.30f,0.00f,0.00f, 0.00f,80.0f,0.00f, 0.00f,0,0,60.0f},
-    {"ACID BASS", WAVE_SAW,      0.002f,0.20f,0.60f,0.08f, 0.30f,0.75f,0.70f,0.003f,0.22f, 0.5f,0.00f,0.50f,0.80f, 375.0f,0.35f,0.20f, 0.30f,0.60f,0.08f, 0.30f,0.00f,0.00f, 0.00f,80.0f,0.35f, 0.40f,4,2,90.0f},
-    {"PWM LEAD",  WAVE_PULSE,    0.005f,0.15f,0.75f,0.20f, 0.75f,0.25f,0.20f,0.010f,0.30f, 0.9f,0.00f,0.50f,0.75f, 280.0f,0.38f,0.22f, 0.45f,0.45f,0.18f, 0.50f,0.70f,0.25f, 0.00f,80.0f,0.20f, 0.00f,0,2,40.0f},
-    {"SUPER PAD", WAVE_SUPERSAW, 0.600f,0.80f,0.85f,1.40f, 0.50f,0.15f,0.30f,0.800f,1.20f, 0.3f,0.20f,0.70f,0.65f, 420.0f,0.45f,0.20f, 0.85f,0.35f,0.40f, 0.30f,0.00f,0.00f, 0.00f,80.0f,0.00f, 0.00f,0,0,60.0f},
-    {"PLUCK",     WAVE_PULSE,    0.001f,0.18f,0.00f,0.15f, 0.35f,0.30f,0.65f,0.002f,0.14f, 0.5f,0.00f,0.50f,0.80f, 250.0f,0.30f,0.25f, 0.40f,0.50f,0.15f, 0.30f,0.35f,0.00f, 0.06f,45.0f,0.40f, 0.00f,0,0,60.0f},
-    {"SUB BASS",  WAVE_SINE,     0.005f,0.30f,0.90f,0.12f, 0.45f,0.00f,0.00f,0.010f,0.20f, 0.5f,0.00f,0.50f,0.85f, 250.0f,0.00f,0.00f, 0.00f,0.50f,0.00f, 0.30f,0.00f,0.45f, 0.00f,80.0f,0.00f, 0.00f,0,1,60.0f},
-    {"KICK ZAP",  WAVE_SINE,     0.001f,0.28f,0.00f,0.10f, 0.90f,0.00f,0.00f,0.010f,0.20f, 0.5f,0.00f,0.50f,0.90f, 250.0f,0.00f,0.00f, 0.30f,0.50f,0.00f, 0.30f,0.00f,0.00f, 0.50f,70.0f,0.00f, 0.00f,0,1,60.0f},
-    {"WOBBLE",    WAVE_SAW,      0.005f,0.30f,0.80f,0.20f, 0.30f,0.60f,0.00f,0.010f,0.20f, 3.0f,0.85f,0.50f,0.75f, 330.0f,0.35f,0.18f, 0.35f,0.50f,0.10f, 0.30f,0.00f,0.40f, 0.00f,80.0f,0.00f, 0.25f,4,1,60.0f}
+    {"ROLLER",    WAVE_SAW,      0.002f,0.18f,0.35f,0.06f, 0.26f,0.38f,0.45f,0.002f,0.12f, 0.5f,0.00f,0.50f,0.85f, 363.0f,0.25f,0.00f, 0.30f,0.70f,0.05f, 0.30f,0.00f,0.45f, 0.00f,80.0f,0.30f, 0.25f,4,1,25.0f},
+    {"DUB CHORD", WAVE_SAW,      0.003f,0.32f,0.00f,0.25f, 0.30f,0.25f,0.45f,0.003f,0.22f, 0.1f,0.06f,0.50f,0.75f, 363.0f,0.58f,0.35f, 0.85f,0.65f,0.35f, 0.30f,0.00f,0.00f, 0.00f,80.0f,0.40f, 0.10f,0,0,60.0f},
+    {"HYPNO PLCK",WAVE_SINE,     0.001f,0.22f,0.00f,0.18f, 0.55f,0.20f,0.30f,0.001f,0.15f, 7.56f,0.12f,0.50f,0.75f, 242.0f,0.45f,0.30f, 0.60f,0.50f,0.20f, 0.30f,0.00f,0.00f, 0.00f,80.0f,0.30f, 0.00f,0,0,60.0f},
+    {"RUMBLE",    WAVE_SINE,     0.001f,0.45f,0.00f,0.30f, 0.22f,0.10f,0.15f,0.001f,0.10f, 0.5f,0.00f,0.50f,0.42f, 250.0f,0.00f,0.00f, 0.90f,0.90f,0.30f, 0.30f,0.00f,0.00f, 0.45f,45.0f,0.00f, 0.10f,4,1,1.0f},
+    {"BLIP",      WAVE_SQUARE,   0.001f,0.09f,0.00f,0.08f, 0.65f,0.45f,0.35f,0.001f,0.06f, 0.5f,0.00f,0.50f,0.70f, 121.0f,0.50f,0.30f, 0.50f,0.40f,0.15f, 0.40f,0.00f,0.00f, 0.08f,25.0f,0.20f, 0.00f,1,0,60.0f},
+    {"DEEP PAD",  WAVE_TABLE,    0.900f,1.20f,0.80f,2.20f, 0.32f,0.15f,0.15f,0.800f,1.50f, 0.1f,0.18f,0.50f,0.65f, 363.0f,0.40f,0.18f, 0.90f,0.60f,0.50f, 0.30f,0.00f,0.00f, 0.00f,80.0f,0.00f, 0.00f,0,0,60.0f},
+    {"ACID TOOL", WAVE_SAW,      0.002f,0.20f,0.20f,0.07f, 0.20f,0.68f,0.60f,0.002f,0.18f, 0.5f,0.00f,0.50f,0.80f, 363.0f,0.35f,0.15f, 0.40f,0.60f,0.08f, 0.30f,0.00f,0.00f, 0.00f,80.0f,0.35f, 0.30f,4,2,80.0f},
+    {"METAL PERC",WAVE_SQUARE,   0.001f,0.06f,0.00f,0.05f, 0.70f,0.50f,0.20f,0.001f,0.05f, 0.5f,0.00f,0.50f,0.65f, 182.0f,0.30f,0.20f, 0.50f,0.30f,0.18f, 0.40f,0.00f,0.00f, 0.00f,80.0f,0.40f, 0.00f,2,0,60.0f}
 };
+
+// Extras de fábrica (o que não cabe na tabela acima): LFO, OSC2, FM, wavetable, chorus,
+// bitcrusher, accent e o groove. Valem quando o slot está com o som de fábrica.
+struct FactoryEx {
+    uint8_t lfoShape, lfoSync, subSine;
+    float accent;
+    float o2Lvl, o2Semi, o2Det; uint8_t o2Wave, o2Ring, uniSel;
+    float fmAmt, fmRatio, fmDec, fmEnv, fmFb;
+    uint8_t wtBank; float wtPos, wtLfo;
+    float choRate, choDepth, choMix, crBits, crRate, crMix;
+    int bpm; float swing;
+};
+const FactoryEx FACTORY_EX[PRESET_COUNT] = {
+    // lfo sync sub  acc    o2Lvl o2St  o2Det w ring uni  fmAmt ratio dec    env   fb    wt pos   wtLfo  choR choD choM  bits rate crush bpm swing
+    {0, 0, 1, 0.35f,  0.00f, 0,    0,    0, 0, 0,   0.00f, 2.0f, 200,   0.5f, 0.0f, 0, 0.0f, 0.0f,  0.8f, 0.5f, 0.00f, 16, 1, 0.00f, 124, 0.12f},  // ROLLER
+    {1, 1, 0, 0.30f,  0.60f, 7,    6,    0, 0, 1,   0.00f, 2.0f, 200,   0.5f, 0.0f, 0, 0.0f, 0.0f,  0.5f, 0.6f, 0.30f, 16, 1, 0.00f, 122, 0.10f},  // DUB CHORD
+    {0, 1, 0, 0.30f,  0.00f, 0,    0,    0, 0, 0,   0.38f, 3.5f, 120,   0.9f, 0.1f, 0, 0.0f, 0.0f,  0.8f, 0.5f, 0.00f, 16, 1, 0.00f, 124, 0.15f},  // HYPNO PLCK
+    {0, 0, 0, 0.20f,  0.00f, 0,    0,    0, 0, 0,   0.00f, 2.0f, 200,   0.5f, 0.0f, 0, 0.0f, 0.0f,  0.8f, 0.5f, 0.00f, 16, 1, 0.00f, 124, 0.00f},  // RUMBLE
+    {0, 0, 0, 0.30f,  0.00f, 0,    0,    0, 0, 0,   0.00f, 2.0f, 200,   0.5f, 0.0f, 0, 0.0f, 0.0f,  0.8f, 0.5f, 0.00f, 10, 2, 0.35f, 125, 0.10f},  // BLIP
+    {1, 1, 0, 0.30f,  0.40f, 7,    8,    2, 0, 0,   0.00f, 2.0f, 200,   0.5f, 0.0f, 1, 0.3f, 0.35f, 0.4f, 0.6f, 0.45f, 16, 1, 0.00f, 120, 0.00f},  // DEEP PAD
+    {0, 0, 0, 0.65f,  0.00f, 0,    0,    0, 0, 0,   0.00f, 2.0f, 200,   0.5f, 0.0f, 0, 0.0f, 0.0f,  0.8f, 0.5f, 0.00f, 16, 1, 0.00f, 124, 0.08f},  // ACID TOOL
+    {0, 0, 0, 0.30f,  0.80f, 19,   0,    1, 1, 0,   0.00f, 2.0f, 200,   0.5f, 0.0f, 0, 0.0f, 0.0f,  0.8f, 0.5f, 0.00f, 12, 1, 0.20f, 126, 0.15f},  // METAL PERC
+};
+
+// Groove de cada preset (padrão A), tom de Sol menor. "G0" = Sol da oitava -1 (G1), "G1" = G2...
+// Depois da nota: A = accent, S = slide, p/h/q = probabilidade 75/50/25 %, r = ratchet x2.
+const char* const FACTORY_PAT[PRESET_COUNT][16] = {
+    {"--","G0","G0A","G0",  "--","G0","G0","A#0", "--","G0","G0A","G0h", "--","F0","G0","G1S"},      // ROLLER
+    {"--","--","G1A","--",  "--","--","--","--",  "--","--","G1","--",   "--","F1h","--","--"},      // DUB CHORD
+    {"G1","--","D2","A#1",  "--","G2p","D2","--", "G1","--","F2h","A#1",  "D2","--","G1q","C2"},     // HYPNO PLCK
+    {"G0A","--","--","--",  "G0","--","--","--",  "G0A","--","--","--",   "G0","--","--","G0q"},     // RUMBLE
+    {"--","--","G2","--",   "--","D3h","--","--", "--","G2","--","A#2q",  "--","--","F2p","--"},     // BLIP
+    {"G1","--","--","--",   "--","--","--","--",  "D#1","--","--","--",   "--","--","--","--"},      // DEEP PAD
+    {"G0A","G0","G1S","G0", "A#0","G0A","--","G0","C1S","D1","G0A","--",  "F0","G0","G1AS","G0"},   // ACID TOOL
+    {"--","--","G3","--",   "--","--","G3A","--", "--","--","G3","G3h",   "--","--","G3Ar","--"},    // METAL PERC
+};
+
 
 static float clampF(float v, float lo, float hi) {
     if (!(v >= lo)) return lo;
@@ -1962,8 +2001,6 @@ void fxExtraLoad(int slot, bool user) {
     paramChoRate = 0.8f; paramChoDepth = 0.5f; paramChoMix = 0.0f;
     paramCrBits = 16.0f; paramCrRate = 1.0f;  paramCrMix = 0.0f;
     if (!user) {
-        if (slot == 3) { paramChoRate = 0.6f; paramChoDepth = 0.6f; paramChoMix = 0.40f; }   // SUPER PAD
-        if (slot == 2) { paramChoRate = 1.2f; paramChoDepth = 0.5f; paramChoMix = 0.30f; }   // PWM LEAD
     }
 }
 
@@ -2287,6 +2324,49 @@ void nxRead(int slot, bool user) {
 
 void nxInvalidate(int slot) { EEPROM.write(NX_ADDR + slot * NX_BYTES, 0); }
 
+// aplica os extras e o groove do preset de fábrica i
+void factoryExtraApply(int i, bool withPattern) {
+    const FactoryEx &e = FACTORY_EX[i];
+    lfoShape = e.lfoShape % 5; lfoSync = e.lfoSync != 0; subMode = e.subSine ? 1 : 0;
+    paramAccent = e.accent;
+    paramO2Lvl = e.o2Lvl; paramO2Semi = e.o2Semi; paramO2Det = e.o2Det;
+    o2Wave = e.o2Wave & 3; o2Ring = e.o2Ring != 0; o2Sync = false;
+    uniSel = e.uniSel & 3;
+    paramFmAmt = e.fmAmt; paramFmRatio = e.fmRatio; paramFmDecMs = e.fmDec; paramFmEnv = e.fmEnv; paramFmFb = e.fmFb;
+    wtBank = e.wtBank & 3; paramWtPos = e.wtPos; paramWtLfo = e.wtLfo;
+    paramChoRate = e.choRate; paramChoDepth = e.choDepth; paramChoMix = e.choMix;
+    paramCrBits = e.crBits; paramCrRate = e.crRate; paramCrMix = e.crMix;
+    if (!withPattern) return;
+
+    for (int k = 0; k < SEQ_STEPS; k++) {
+        const char *t = FACTORY_PAT[i][k];
+        SeqStep &st = seqBank[0][k];
+        st.gate = false; st.accent = false; st.slide = false; st.probIdx = 0; st.ratchIdx = 0;
+        if (t[0] == '-') continue;
+        static const int8_t NOTE[7] = {9, 11, 0, 2, 4, 5, 7};    // A B C D E F G
+        int semi = NOTE[(t[0] - 'A') % 7];
+        int j = 1;
+        if (t[j] == '#') { semi++; j++; }
+        int oct = (t[j] - '0') - 1; j++;
+        if (semi >= 12) { semi -= 12; oct++; }
+        st.semi = (uint8_t)semi; st.oct = (int8_t)constrain(oct, -1, 2); st.gate = true;
+        for (; t[j]; j++) {
+            if (t[j] == 'A') st.accent = true;
+            if (t[j] == 'S') st.slide = true;
+            if (t[j] == 'p') st.probIdx = 1;
+            if (t[j] == 'h') st.probIdx = 2;
+            if (t[j] == 'q') st.probIdx = 3;
+            if (t[j] == 'r') st.ratchIdx = 1;
+        }
+    }
+    seqBpm = constrain(e.bpm, 40, 300);
+    seqMode = 0;
+    paramSwing = e.swing;
+    seqUpdateTiming();
+    seqRedrawMask = 0xFFFF;
+    seqEditorDirty = true;
+}
+
 void presetLoadCore(int i) {
     if (i < 0 || i >= PRESET_COUNT) return;
     PresetData d;
@@ -2311,6 +2391,7 @@ void presetLoadCore(int i) {
     nxRead(i, ok);
     presetApplyExtra(drive, glide, modes);
     fxExtraLoad(i, ok);
+    if (!ok) factoryExtraApply(i, presetLoadPattern);
     presetCur = i;
     snprintf(presetMsg, sizeof(presetMsg), "Loaded: %s", presetName(i));
 }
