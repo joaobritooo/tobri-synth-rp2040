@@ -677,18 +677,20 @@ def build():
                                         'semicolcheias que "pula" o tempo forte, para encaixar entre os kicks.'],
         ['2 · DUB CHORD', 'Stab de dub techno', 'Serra + OSC2 uma quinta acima, decay curto, delay de 3/16 com bastante '
                                                  'feedback, reverb grande e chorus. Poucas notas: o delay faz o resto.'],
-        ['3 · HYPNO PLCK', 'Pluck hipnótico', 'Senoide com FM (ratio 3,5) e LFO em 1/4 no filtro; arpejo com '
-                                               'probabilidade, então cada volta é um pouco diferente.'],
+        ['3 · HYPNO PLCK', 'Pluck hipnótico', 'Senoide com FM (ratio 3,5) e LFO em 1/4 no filtro, tocando um '
+                                               'arpejo em Sol menor.'],
         ['4 · RUMBLE', 'Kick + rumble', 'Senoide com envelope de pitch (vira kick) e reverb escuro e longo. Quatro no '
                                          'chão; use como base ou com o kick da sua bateria.'],
         ['5 · BLIP', 'Blip minimal', 'Quadrada curta em passa-banda, um pouco de bitcrusher e delay de 1/16. Notas '
-                                      'esparsas, várias com probabilidade.'],
+                                      'esparsas.'],
         ['6 · DEEP PAD', 'Pad escuro', 'Wavetable VOCAL varrida pelo LFO (2 compassos), OSC2 na quinta, chorus e reverb '
                                         'grande. Duas notas longas por padrão.'],
         ['7 · ACID TOOL', 'Acid profundo', '303 em 24 dB com ressonância alta, accent forte e slides (modo LEGATO).'],
         ['8 · METAL PERC', 'Percussão metálica', 'Quadrada com ring mod (OSC2 +19), passa-alta e bitcrusher leve: '
                                                   'um "hat" metálico nos contratempos, com ratchet.'],
     ], [30 * mm, 32 * mm, W - 62 * mm]))
+    story.append(tip('Os grooves de fábrica tocam todas as notas sempre. Para variar a cada volta, ligue <b>PROB</b> '
+                     'num passo (SEQ p1): passos com <b>%</b> na célula tocam só às vezes, de propósito.'))
     story.append(tip('Se você já gravou algo num slot, ele continua com o seu som. Para ver o preset novo, toque '
                      '<b>FACTORY</b> duas vezes nesse slot.', 'ATENÇÃO'))
     story.append(CondPageBreak(90 * mm))
