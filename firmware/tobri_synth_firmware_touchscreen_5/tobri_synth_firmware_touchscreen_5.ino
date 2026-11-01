@@ -14,6 +14,9 @@
    v6: LFO com 5 formas + SYNC ao BPM (MOD p1) | accent 303 (SEQ p2) | ring mod
          (OSC p4) | wavefolder (FLT p2) | swipe troca subpágina | toque duplo no
          slider = valor padrão | UNDO depois de RND/CLR/COPY | medidor de saída
+   v7: toque na aba ativa abre o MENU das subpáginas (com nomes). ENV agora tem
+         AMP / FILTER ENV / PITCH ENV; FLT = FILTER (cutoff, reso, drive) + MODE
+         (tipo, inclinação, wavefolder); MOD = LFO / MATRIX / VOICES
    ENCODER: girar = CUTOFF, segurar+girar = RESSONÂNCIA, clique = PLAY/STOP do
          SEQ, segurar parado = PÂNICO (lido por interrupção, com aceleração)
    Áudio 100% em inteiros (sem float por amostra); os floats são convertidos
@@ -278,18 +281,18 @@ TouchSlider sliderSubLvl   = {8, 182, 304, 30, &paramSubLevel, 0.0f, 1.0f,  "SUB
 // Aba FLT
 TouchSlider sliderCutoff   = {8, 118, 304, 30, &paramCutoff,   0.05f, 1.0f, "CUTOFF FREQ", 0, -999.0f};
 TouchSlider sliderReso     = {8, 150, 304, 30, &paramReso,     0.0f, 1.0f,  "RESSONANCIA", 0, -999.0f};
-TouchSlider sliderFiltAmt  = {8, 182, 304, 30, &paramFiltAmt,  0.0f, 1.0f,  "FILT AMOUNT", 0, -999.0f};
-TouchSlider sliderDrive    = {8, 96,  304, 30, &paramDrive,    0.0f, 1.0f,  "DRIVE",       0, -999.0f};
+TouchSlider sliderFiltAmt  = {8, 96,  304, 30, &paramFiltAmt,  0.0f, 1.0f,  "FILTER ENV AMOUNT", 0, -999.0f};
+TouchSlider sliderDrive    = {8, 182, 304, 30, &paramDrive,    0.0f, 1.0f,  "DRIVE",       0, -999.0f};
 TouchSlider sliderFAtt     = {8, 128, 304, 30, &paramFiltAtt,  0.001f, 1.0f, "FILTER ENV ATTACK", 4, -999.0f};
 TouchSlider sliderFDec     = {8, 160, 304, 30, &paramFiltDec,  0.01f, 2.0f, "FILTER ENV DECAY",  4, -999.0f};
-TouchSlider sliderFold     = {8, 192, 304, 28, &paramFold,     0.0f, 1.0f,  "WAVEFOLDER",  0, -999.0f};
+TouchSlider sliderFold     = {8, 100, 304, 30, &paramFold,     0.0f, 1.0f,  "WAVEFOLDER",  0, -999.0f};
 // Aba MOD
 TouchSlider sliderLfoRate  = {8, 118, 304, 30, &paramLfoRate,  0.1f, 20.0f, "LFO RATE",    1, -999.0f};
 TouchSlider sliderLfoDepth = {8, 150, 304, 30, &paramLfoDepth, 0.0f, 1.0f,  "LFO DEPTH",   0, -999.0f};
 TouchSlider sliderDetune   = {8, 182, 304, 30, &paramDetune,   0.0f, 1.0f,  "DETUNE",      0, -999.0f};
 TouchSlider sliderPitchAmt = {8, 118, 304, 30, &paramPitchAmt, 0.0f, 1.0f,  "PITCH ENV AMOUNT", 3, -999.0f};
 TouchSlider sliderPitchDec = {8, 150, 304, 30, &paramPitchDecMs, 5.0f, 800.0f, "PITCH ENV DECAY", 2, -999.0f};
-TouchSlider sliderVelFilt  = {8, 182, 304, 30, &paramVelFilt,  0.0f, 1.0f,  "VELOCITY > FILTER", 0, -999.0f};
+TouchSlider sliderVelFilt  = {8, 192, 304, 28, &paramVelFilt,  0.0f, 1.0f,  "VELOCITY > FILTER", 0, -999.0f};
 TouchSlider sliderGlide    = {8, 72,  304, 30, &paramGlideMs,  1.0f, 500.0f, "GLIDE TIME",  2, -999.0f};
 // Aba MOD página 4 (matriz): o ponteiro/label mudam conforme a célula selecionada
 char mmLabel[24] = "LFO > CUTOFF";
@@ -2990,6 +2993,39 @@ void drawPitchView(int x0, int y0, int h) {
     tft.drawRGBBitmap(x0, y0, panelCanvas.getBuffer(), w, h);
 }
 
+void drawFenvView(int x0, int y0, int h) {
+    const int w = PANEL_W;
+    panelCanvas.fillRect(0, 0, w, h, COL_BG);
+    panelCanvas.drawRoundRect(0, 0, w, h, RADIUS, COL_BORDER);
+    char t[48];
+    snprintf(t, sizeof(t), "FILTER ENV  A %d ms  D %d ms  AMT %d%%", (int)(paramFiltAtt * 1000.0f + 0.5f),
+             (int)(paramFiltDec * 1000.0f + 0.5f), (int)(paramFiltAmt * 100.0f + 0.5f));
+    panelCanvas.setTextSize(1);
+    panelCanvas.setTextColor(COL_MUTED);
+    panelCanvas.setCursor(8, 6);
+    panelCanvas.print(t);
+
+    // eixo de 0 a 3 s: sobe no ataque e cai no decay (altura = AMOUNT)
+    int gx0 = 8, gw = w - 16, yTop = 18, yBot = h - 6;
+    panelCanvas.drawFastHLine(gx0, yBot, gw, COL_MUTED);
+    float span = 3.0f;
+    int xa = gx0 + (int)(paramFiltAtt / span * gw);
+    int xd = xa + (int)(paramFiltDec / span * gw);
+    if (xd > gx0 + gw) xd = gx0 + gw;
+    int yPk = yBot - (int)(paramFiltAmt * (yBot - yTop));
+    panelCanvas.drawLine(gx0, yBot, xa, yPk, COL_ACCENT2);
+    int prevX = xa, prevY = yPk;
+    for (int x = xa + 1; x <= xd; x++) {               // decay exponencial até o fim do tempo
+        float f = (float)(x - xa) / (float)max(1, xd - xa);
+        int y = yBot - (int)((yBot - yPk) * expf(-4.0f * f));
+        panelCanvas.drawLine(prevX, prevY, x, y, COL_ACCENT2);
+        prevX = x; prevY = y;
+    }
+    if (prevX < gx0 + gw) panelCanvas.drawLine(prevX, prevY, gx0 + gw, yBot, COL_ACCENT2);
+    panelCanvas.fillCircle(xa, yPk, 3, COL_ACCENT);
+    tft.drawRGBBitmap(x0, y0, panelCanvas.getBuffer(), w, h);
+}
+
 void drawOsc2Graph(int x0, int y0, int h) {
     const int w = PANEL_W;
     panelCanvas.fillRect(0, 0, w, h, COL_BG);
@@ -3297,13 +3333,68 @@ const char* PAGE_LABELS[TAB_COUNT] = {"OSC", "ENV", "FLT", "MOD", "SEQ", "FX", "
 uint8_t subPg[TAB_COUNT] = {0, 0, 0, 0, 0, 0, 0};
 
 int pageSubCount(int i) {
-    if (i == PAGE_MOD) return 4;
-    if (i == PAGE_SEQ) return 3;
     if (i == PAGE_OSC) return 6;
+    if (i == PAGE_ENV || i == PAGE_MOD || i == PAGE_SEQ) return 3;
     if (i == PAGE_FLT || i == PAGE_PRE) return 2;
     return 1;
 }
 bool pageHasSub(int i) { return pageSubCount(i) > 1; }
+
+// FX tem as próprias subpáginas (DLY/REV/CHR/BIT), mas aparece no menu e nos pontinhos como as outras
+extern int fxSubPage;
+int tabSubCount(int i) { return (i == PAGE_FX) ? 4 : pageSubCount(i); }
+int tabSubIdx(int i)   { return (i == PAGE_FX) ? fxSubPage : (int)subPg[i]; }
+
+const char* const SUB_NAMES[TAB_COUNT][6] = {
+    {"WAVE", "PULSE / SUB", "FM", "OSC 2", "UNISON", "WAVETABLE"},
+    {"AMP ENV", "FILTER ENV", "PITCH ENV"},
+    {"FILTER", "MODE / FOLD"},
+    {"LFO", "MATRIX", "VOICE/GLIDE"},
+    {"STEPS", "PLAY / SYNC", "PATTERNS"},
+    {"DELAY", "REVERB", "CHORUS", "CRUSH"},
+    {"PRESETS", "MIDI MAP/CAL"},
+};
+
+// MENU DAS SUBPÁGINAS: toque na aba que já está aberta -> lista com os nomes
+int8_t subMenuFor = -1;               // aba com o menu aberto (-1 = fechado)
+const int SUBMENU_W = 180, SUBMENU_ROW = 28;
+
+void subMenuRect(int &x, int &y, int &w, int &h) {
+    int tx = TAB_X0 + subMenuFor * (TAB_W + TAB_GAP);
+    w = SUBMENU_W;
+    h = tabSubCount(subMenuFor) * SUBMENU_ROW + 8;
+    x = constrain(tx, 4, 320 - w - 4);
+    y = 31;
+}
+
+void drawSubMenu() {
+    int x, y, w, h;
+    subMenuRect(x, y, w, h);
+    tft.fillRect(x + 3, y + 3, w, h, COL_MUTED);                 // sombra
+    tft.fillRoundRect(x, y, w, h, RADIUS, COL_BG);
+    tft.drawRoundRect(x, y, w, h, RADIUS, COL_BORDER);
+    tft.drawRoundRect(x + 1, y + 1, w - 2, h - 2, RADIUS, COL_BORDER);
+    int n = tabSubCount(subMenuFor), cur = tabSubIdx(subMenuFor);
+    tft.setTextSize(2);
+    for (int k = 0; k < n; k++) {
+        int ry = y + 4 + k * SUBMENU_ROW;
+        bool on = (k == cur);
+        if (on) tft.fillRoundRect(x + 4, ry, w - 8, SUBMENU_ROW - 2, 4, COL_ACCENT);
+        tft.setTextColor(on ? COL_BG : COL_TEXT);
+        tft.setCursor(x + 12, ry + 6);
+        tft.print(SUB_NAMES[subMenuFor][k]);
+    }
+    tft.setTextSize(1);
+}
+
+// devolve a subpágina tocada (-1 = fora do menu)
+int subMenuHit(int tx, int ty) {
+    int x, y, w, h;
+    subMenuRect(x, y, w, h);
+    if (tx < x || tx >= x + w || ty < y + 4 || ty >= y + h - 4) return -1;
+    int k = (ty - y - 4) / SUBMENU_ROW;
+    return (k >= 0 && k < tabSubCount(subMenuFor)) ? k : -1;
+}
 
 void drawTabs() {
     for (int i = 0; i < TAB_COUNT; i++) {
@@ -3318,11 +3409,11 @@ void drawTabs() {
         tft.setCursor(x + (TAB_W - textW) / 2, 8);
         tft.print(PAGE_LABELS[i]);
 
-        if (active && pageHasSub(i)) {
-            int n = pageSubCount(i);
+        if (active && tabSubCount(i) > 1) {
+            int n = tabSubCount(i);
             int sx = x + TAB_W / 2 - ((n - 1) * 8 + 4) / 2;
             for (int k = 0; k < n; k++) {
-                uint16_t c = (subPg[i] == k) ? COL_BG : COL_MUTED;
+                uint16_t c = (tabSubIdx(i) == k) ? COL_BG : COL_MUTED;
                 tft.fillRect(sx + k * 8, 26, 4, 2, c);
             }
         }
@@ -4095,16 +4186,16 @@ void drawFltModeButtons() {
 
 void drawFltPage2() {
     drawFltModeButtons();
-    drawSlider(sliderDrive);
-    drawSlider(sliderFAtt);
-    drawSlider(sliderFDec);
     drawSlider(sliderFold);
+    tft.setTextSize(1);
+    tft.setTextColor(COL_MUTED);
+    tft.setCursor(8, 140); tft.print("LP: WARM BASS/PADS  BP: NASAL/VOCAL  HP: THIN");
+    tft.setCursor(8, 154); tft.print("24 dB = STEEPER (MOOG-LIKE), 12 dB = SOFTER");
+    tft.setCursor(8, 168); tft.print("WAVEFOLDER: TRY SIN OR TRI + ENV ON CUTOFF");
+    tft.setCursor(8, 190); tft.print("FILTER ENVELOPE: ENV TAB > FILTER ENV");
 }
 
 void handleFltPage2Touch(int tx, int ty, bool newPress) {
-    if (touchSlider(sliderDrive, tx, ty)) return;
-    if (touchSlider(sliderFAtt, tx, ty)) return;
-    if (touchSlider(sliderFDec, tx, ty)) return;
     if (touchSlider(sliderFold, tx, ty)) return;
     if (!newPress) return;
     for (int k = 0; k < 3; k++) {
@@ -4117,9 +4208,6 @@ void handleFltPage2Touch(int tx, int ty, bool newPress) {
 
 void updateFltPage2() {
     if (fltModeDrawn != (int)(filtMode | (filtSlope << 2))) drawFltModeButtons();
-    refreshSlider(sliderDrive);
-    refreshSlider(sliderFAtt);
-    refreshSlider(sliderFDec);
     refreshSlider(sliderFold);
 }
 
@@ -4181,6 +4269,7 @@ void updateVoicePage() {
 // ============================================================================
 void drawFxToggle() {
     for (int k = 0; k < 4; k++) drawButtonEx(btnFxSel[k], fxSubPage == k, btnFxSel[k].label, 2);
+    drawTabs();
 }
 
 void drawFxSub() {
@@ -4736,6 +4825,7 @@ void handleNameTouch(int tx, int ty, bool newPress) {
 
 void presetRedrawUI() {
     if (nameEdit) return;
+    if (subMenuFor >= 0) { switchPage(currentPage); return; }   // fecha o menu e redesenha tudo
     if (currentPage == PAGE_PRE) {
         if (subPg[PAGE_PRE] == 0) {
             drawPresetSlots();
@@ -4835,7 +4925,24 @@ void drawPageOSC_static() {
 }
 
 void drawPageENV_static() {
-    drawADSR(ENV_PX0, ENV_PY0, ENV_PH);
+    uint8_t sp = subPg[PAGE_ENV];
+    if (sp == 0) {
+        drawADSR(ENV_PX0, ENV_PY0, ENV_PH);
+    } else if (sp == 1) {
+        drawFenvView(8, 38, 54);
+        drawSlider(sliderFiltAmt);
+        drawSlider(sliderFAtt);
+        drawSlider(sliderFDec);
+        drawSlider(sliderVelFilt);
+    } else {
+        drawPitchView(8, 38, 75);
+        drawSlider(sliderPitchAmt);
+        drawSlider(sliderPitchDec);
+        tft.setTextSize(1);
+        tft.setTextColor(COL_MUTED);
+        tft.setCursor(8, 190); tft.print("THE NOTE STARTS HIGHER AND FALLS BACK:");
+        tft.setCursor(8, 204); tft.print("KICKS, ZAPS, TOMS. SHORT DECAY = PUNCH.");
+    }
 }
 
 void drawPageFLT_static() {
@@ -4843,7 +4950,7 @@ void drawPageFLT_static() {
         drawFilterResponse(FLT_PX0, FLT_PY0, FLT_PH);
         drawSlider(sliderCutoff);
         drawSlider(sliderReso);
-        drawSlider(sliderFiltAmt);
+        drawSlider(sliderDrive);
     } else {
         drawFltPage2();
     }
@@ -4858,14 +4965,9 @@ void drawPageMOD_static() {
         drawSlider(sliderLfoDepth);
         drawSlider(sliderDetune);
     } else if (sp == 1) {
-        drawPitchView(8, 38, 75);
-        drawSlider(sliderPitchAmt);
-        drawSlider(sliderPitchDec);
-        drawSlider(sliderVelFilt);
-    } else if (sp == 2) {
-        drawVoicePage();
-    } else {
         drawMmPage();
+    } else {
+        drawVoicePage();
     }
 }
 
@@ -4902,6 +5004,7 @@ int dragTarget = 0;
 
 void switchPage(Page p) {
     currentPage = p;
+    subMenuFor = -1;
     dragTarget = 0;
     sliderGrab = nullptr;
     nameEdit = false;
@@ -4985,14 +5088,29 @@ void handleTouch(int tx, int ty, bool newPress) {
 
     // arraste de slider pode subir até a faixa das abas (fine mode); senão ignora
     if (ty < 32 && !newPress && sliderGrab == nullptr) return;
+    // menu de subpáginas aberto: um toque escolhe um item ou fecha o menu
+    if (subMenuFor >= 0) {
+        if (!newPress) return;
+        int k = subMenuHit(tx, ty);
+        int tab = subMenuFor;
+        subMenuFor = -1;
+        if (k >= 0) {
+            if (tab == PAGE_FX) fxSubPage = k;
+            else subPg[tab] = (uint8_t)k;
+            switchPage((Page)tab);
+            return;
+        }
+        int idx = (tx - TAB_X0) / (TAB_W + TAB_GAP);
+        if (ty < 32 && idx >= 0 && idx < TAB_COUNT && idx != tab) switchPage((Page)idx);
+        else switchPage((Page)tab);                          // fora do menu: só fecha
+        return;
+    }
+
     if (ty < 32 && newPress) {
         int idx = (tx - TAB_X0) / (TAB_W + TAB_GAP);
         if (idx < 0 || idx >= TAB_COUNT) return;
         if (idx == (int)currentPage) {
-            if (pageHasSub(idx)) {
-                subPg[idx] = (uint8_t)((subPg[idx] + 1) % pageSubCount(idx));
-                switchPage((Page)idx);
-            }
+            if (tabSubCount(idx) > 1) { subMenuFor = (int8_t)idx; drawSubMenu(); }
         } else {
             switchPage((Page)idx);
         }
@@ -5018,6 +5136,17 @@ void handleTouch(int tx, int ty, bool newPress) {
             syncKnobsFromParams();
             break;
         case PAGE_ENV:
+            if (subPg[PAGE_ENV] == 1) {
+                if (!touchSlider(sliderFiltAmt, tx, ty))
+                    if (!touchSlider(sliderFAtt, tx, ty))
+                        if (!touchSlider(sliderFDec, tx, ty))
+                            touchSlider(sliderVelFilt, tx, ty);
+                break;
+            }
+            if (subPg[PAGE_ENV] == 2) {
+                if (!touchSlider(sliderPitchAmt, tx, ty)) touchSlider(sliderPitchDec, tx, ty);
+                break;
+            }
             if (newPress) dragTarget = pickEnvHandle(tx, ty);
             if (dragTarget != 0) applyDrag(tx, ty);
             syncKnobsFromParams();
@@ -5032,7 +5161,7 @@ void handleTouch(int tx, int ty, bool newPress) {
             else {
                 if (!touchSlider(sliderCutoff, tx, ty))
                     if (!touchSlider(sliderReso, tx, ty))
-                        touchSlider(sliderFiltAmt, tx, ty);
+                        touchSlider(sliderDrive, tx, ty);
             }
             syncKnobsFromParams();
             break;
@@ -5040,13 +5169,9 @@ void handleTouch(int tx, int ty, bool newPress) {
             if (subPg[PAGE_MOD] == 0) {
                 handleLfoTouch(tx, ty, newPress);
             } else if (subPg[PAGE_MOD] == 1) {
-                if (touchSlider(sliderPitchAmt, tx, ty)) return;
-                if (touchSlider(sliderPitchDec, tx, ty)) return;
-                touchSlider(sliderVelFilt, tx, ty);
-            } else if (subPg[PAGE_MOD] == 2) {
-                handleVoicePageTouch(tx, ty, newPress);
-            } else {
                 handleMmTouch(tx, ty, newPress);
+            } else {
+                handleVoicePageTouch(tx, ty, newPress);
             }
             break;
         case PAGE_SEQ:
@@ -5098,7 +5223,8 @@ void updateDisplay() {
     if (millis() - lastDisplayUpdate < 40) return;
     lastDisplayUpdate = millis();
 
-    switch (currentPage) {
+    // com o menu aberto a página não é redesenhada por cima dele
+    if (subMenuFor < 0) switch (currentPage) {
         case PAGE_OSC: {
             if (subPg[PAGE_OSC] == 0) {
                 if (lastWaveDisplay != (int)currentWave) {
@@ -5131,17 +5257,38 @@ void updateDisplay() {
             break;
         }
         case PAGE_ENV: {
-            static float lA = -1, lD = -1, lS = -1, lR = -1;
-            if (paramAttack != lA || paramDecay != lD || paramSustain != lS || paramRelease != lR) {
-                drawADSR(ENV_PX0, ENV_PY0, ENV_PH);
-                lA = paramAttack; lD = paramDecay; lS = paramSustain; lR = paramRelease;
+            uint8_t sp = subPg[PAGE_ENV];
+            if (sp == 0) {
+                static float lA = -1, lD = -1, lS = -1, lR = -1;
+                if (paramAttack != lA || paramDecay != lD || paramSustain != lS || paramRelease != lR) {
+                    drawADSR(ENV_PX0, ENV_PY0, ENV_PH);
+                    lA = paramAttack; lD = paramDecay; lS = paramSustain; lR = paramRelease;
+                }
+                updateTextField(8, 130, 304, 16, lastAtk, sizeof(lastAtk), COL_TEXT, 2,
+                                "Atk: %.2fs | Dec: %.2fs", paramAttack, paramDecay);
+                updateTextField(8, 156, 304, 16, lastSus, sizeof(lastSus), COL_TEXT, 2,
+                                "Sus: %d%%  | Rel: %.2fs", (int)(paramSustain * 100), paramRelease);
+                updateTextField(8, 190, 304, 10, lastCorte, sizeof(lastCorte), COL_MUTED, 1,
+                                "%s", "DRAG THE 3 POINTS");
+            } else if (sp == 1) {
+                static float lAt = -1, lDe = -1, lAm = -1;
+                if (paramFiltAtt != lAt || paramFiltDec != lDe || paramFiltAmt != lAm) {
+                    drawFenvView(8, 38, 54);
+                    lAt = paramFiltAtt; lDe = paramFiltDec; lAm = paramFiltAmt;
+                }
+                refreshSlider(sliderFiltAmt);
+                refreshSlider(sliderFAtt);
+                refreshSlider(sliderFDec);
+                refreshSlider(sliderVelFilt);
+            } else {
+                static float lA = -1, lD = -1;
+                if (paramPitchAmt != lA || paramPitchDecMs != lD) {
+                    drawPitchView(8, 38, 75);
+                    lA = paramPitchAmt; lD = paramPitchDecMs;
+                }
+                refreshSlider(sliderPitchAmt);
+                refreshSlider(sliderPitchDec);
             }
-            updateTextField(8, 124, 304, 16, lastCorte, sizeof(lastCorte), COL_TEXT, 2,
-                            "Corte: %d%% | Reso: %d%%", (int)(paramCutoff * 100), (int)(paramReso * 100));
-            updateTextField(8, 148, 304, 16, lastAtk, sizeof(lastAtk), COL_TEXT, 2,
-                            "Atk: %.2fs | Dec: %.2fs", paramAttack, paramDecay);
-            updateTextField(8, 172, 304, 16, lastSus, sizeof(lastSus), COL_TEXT, 2,
-                            "Sus: %d%%  | Rel: %.2fs", (int)(paramSustain * 100), paramRelease);
             break;
         }
         case PAGE_FLT: {
@@ -5155,7 +5302,7 @@ void updateDisplay() {
                 }
                 refreshSlider(sliderCutoff);
                 refreshSlider(sliderReso);
-                refreshSlider(sliderFiltAmt);
+                refreshSlider(sliderDrive);
             } else {
                 updateFltPage2();
             }
@@ -5169,18 +5316,9 @@ void updateDisplay() {
                 refreshSlider(sliderLfoDepth);
                 refreshSlider(sliderDetune);
             } else if (subPg[PAGE_MOD] == 1) {
-                static float lA = -1, lD = -1;
-                if (paramPitchAmt != lA || paramPitchDecMs != lD) {
-                    drawPitchView(8, 38, 75);
-                    lA = paramPitchAmt; lD = paramPitchDecMs;
-                }
-                refreshSlider(sliderPitchAmt);
-                refreshSlider(sliderPitchDec);
-                refreshSlider(sliderVelFilt);
-            } else if (subPg[PAGE_MOD] == 2) {
-                updateVoicePage();
-            } else {
                 updateMmPage();
+            } else {
+                updateVoicePage();
             }
             break;
         }
@@ -5277,6 +5415,7 @@ void checkSwipe(int x0, int y0, int x1, int y1, unsigned long ms) {
     int dx = x1 - x0, dy = y1 - y0;
     if (y0 < 32 || ms > SWIPE_MAX_MS || abs(dx) < SWIPE_MIN_DX || abs(dy) > SWIPE_MAX_DY) return;
     if (currentPage == PAGE_PRE && nameEdit) return;
+    if (subMenuFor >= 0) return;
     int dir = (dx < 0) ? 1 : -1;
     if (currentPage == PAGE_FX) {
         fxSubPage = (fxSubPage + dir + 4) & 3;

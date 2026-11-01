@@ -7,6 +7,11 @@ Sintetizador polifônico de 4 vozes num Raspberry Pi Pico (RP2040). Tem tela tou
   <img src="docs/img/screen_seq1.png" width="32%">
   <img src="docs/img/screen_mod1.png" width="32%">
 </p>
+<p align="center">
+  <img src="docs/img/screen_menu.png" width="32%">
+  <img src="docs/img/screen_env2.png" width="32%">
+  <img src="docs/img/screen_flt1.png" width="32%">
+</p>
 
 > As telas acima foram geradas pelo próprio firmware, compilado no PC com o emulador de [`tools/emu`](tools/emu).
 
@@ -29,6 +34,7 @@ Sintetizador polifônico de 4 vozes num Raspberry Pi Pico (RP2040). Tem tela tou
 - **Efeitos:** bitcrusher, chorus, delay ping-pong e reverb.
 - **Presets e MIDI:** 8 presets com nome. CC learn, Program Change e pads de controlador como passos do sequenciador.
 - **Interface:**
+  - 7 abas; tocar na aba aberta mostra o menu com o nome de cada página;
   - toque filtrado, ajuste FINE e toque duplo para voltar ao valor padrão;
   - swipe entre páginas;
   - calibração do touch e medidor de saída com CLIP.

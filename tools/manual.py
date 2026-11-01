@@ -311,7 +311,7 @@ def on_page(c, doc):
     c.line(18 * mm, 14 * mm, A4[0] - 18 * mm, 14 * mm)
     c.setFont('UI', 8)
     c.setFillColor(SUB)
-    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v6')
+    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v7')
     c.drawRightString(A4[0] - 18 * mm, 9.5 * mm, str(doc.page))
     c.restoreState()
 
@@ -331,8 +331,8 @@ def on_cover(c, doc):
     c.setFont('UI', 10.5)
     y = A4[1] - 74 * mm
     for line in ('Sintetizador polifônico de 4 vozes com RP2040, tela touch de 3,2"',
-                 'USB MIDI e encoder · firmware v6',
-                 '7 abas, 22 telas: osciladores, wavetable, FM, filtro, LFO,',
+                 'USB MIDI e encoder · firmware v7',
+                 '7 abas, 23 telas: osciladores, wavetable, FM, envelopes, filtro, LFO,',
                  'matriz de modulação, sequenciador de 16 passos, 4 efeitos e 8 presets'):
         c.drawString(20 * mm, y, line)
         y -= 6 * mm
@@ -380,11 +380,17 @@ def build():
         '<b>Monitor MIDI</b>: última mensagem recebida (canal, nota, velocity), contador e uso de CPU.',
         '<b>Medidor de saída</b>: nível do áudio de -48 a 0 dB.',
         '<b>CLIP</b>: acende 1 s quando a saída passa do limite. Baixe o VOLUME, o DRIVE ou os MIX.',
-    ], note='Para ir à próxima página de uma aba, <b>toque de novo na aba que já está aberta</b> '
-            '(ela dá a volta no final) ou faça <b>swipe</b>.'))
+    ], note='Para trocar de página dentro de uma aba, <b>toque de novo na aba que já está aberta</b>: '
+            'abre o menu com o nome de cada página. Também dá para fazer <b>swipe</b>.'))
 
-    story.append(Paragraph('Gestos de toque', st_h2))
-    story.append(img(gesture_figure(), W))
+    story.append(shot_block('menu_osc', [(25, 15), (90, 50), (90, 190)], [
+        'Toque na aba que já está aberta (aqui, OSC).',
+        'O menu lista as páginas daquela aba. A atual fica destacada.',
+        'Toque num nome para ir direto. Tocar fora do menu só fecha.'],
+        title='Menu de páginas',
+        note='Funciona em todas as abas com mais de uma página, inclusive FX (DELAY, REVERB, CHORUS, CRUSH).'))
+
+    story.append(KeepTogether([Paragraph('Gestos de toque', st_h2), img(gesture_figure(), W)]))
     story.append(Spacer(1, 4))
     story.append(table([
         ['Gesto', 'O que faz'],
@@ -393,6 +399,7 @@ def build():
         ['Afastar o dedo (FINE)', 'Durante o arraste, afaste o dedo da barra na vertical: aparece <b>FINE 1/2, 1/4...</b> '
                                   'e o movimento fica mais preciso quanto mais longe.'],
         ['Toque duplo no slider', 'Volta o parâmetro ao valor padrão de fábrica.'],
+        ['Tocar na aba aberta', 'Abre o menu com os nomes das páginas da aba.'],
         ['Swipe horizontal', 'Arraste rápido para a esquerda (próxima página) ou para a direita (anterior), '
                              'começando fora de sliders e gráficos. Na aba FX troca DLY/REV/CHR/BIT.'],
         ['Botões "TAP 2X"', 'SAVE, FACTORY e CLR pedem confirmação: o botão vira <b>SURE?</b> por 2 s; toque de novo.'],
@@ -407,7 +414,8 @@ def build():
     story.append(CondPageBreak(110 * mm))
 
     # ----- 2. OSC
-    story += section('2 · ABA OSC', 'Osciladores', 'A aba OSC tem <b>6 páginas</b>. Toque de novo em OSC para avançar.')
+    story += section('2 · ABA OSC', 'Osciladores', 'A aba OSC tem <b>6 páginas</b>: WAVE, PULSE / SUB, FM, OSC 2, UNISON e WAVETABLE. Toque de novo em OSC '
+                     'para escolher no menu.')
     story.append(shot_block('osc1', [(300, 62), (300, 102), (300, 145), (200, 200)], [
         '<b>Formas de onda</b>: SAW (serra), SQR (quadrada), TRI, SIN, PLS (pulso), SSW (supersaw), NSE (ruído) e '
         '<b>WT</b> (wavetable, ver página 6).',
@@ -438,7 +446,7 @@ def build():
     story.append(shot_block('osc5', [(160, 52), (160, 90), (160, 140)], [
         '<b>UNISON</b>: OFF, x2, x3 ou x5 cópias desafinadas de cada voz.',
         '<b>UNISON SPREAD</b>: quanto as cópias se afastam.',
-        'Funciona em SAW/SQR/PLS/TRI/SIN. Mais cópias = mais CPU: confira o medidor na aba MOD p3.'],
+        'Funciona em SAW/SQR/PLS/TRI/SIN. Mais cópias = mais CPU: confira o medidor em MOD p3 (VOICE/GLIDE).'],
         title='Página 5 · Unison'))
     story.append(shot_block('osc6', [(160, 52), (90, 105), (240, 105), (160, 163), (160, 195)], [
         '<b>Bancos</b>: ANALOG, VOCAL, ORGAN e SYNC. Tocar num banco já seleciona a onda WT.',
@@ -446,38 +454,55 @@ def build():
         'O quadro que está tocando agora (com o morph).',
         '<b>WT POSITION</b>: posição na tabela (varre os 8 quadros suavemente).',
         '<b>POSITION LFO AMOUNT</b>: o LFO varre a tabela sozinho.'], title='Página 6 · Wavetable',
-        note='A posição também pode ser modulada pela linha <b>PWM/WT</b> da matriz (MOD p4).'))
+        note='A posição também pode ser modulada pela linha <b>PWM/WT</b> da matriz (MOD p2).'))
     story.append(CondPageBreak(110 * mm))
 
-    # ----- 3. ENV + FLT
-    story += section('3 · ABAS ENV E FLT', 'Envelope e filtro')
-    story.append(shot_block('env', [(16, 62), (22, 75), (80, 102), (160, 160)], [
+    # ----- 3. ENV
+    story += section('3 · ABA ENV', 'Envelopes',
+                     'Os três envelopes ficam juntos: <b>AMP ENV</b> (volume), <b>FILTER ENV</b> (filtro) e '
+                     '<b>PITCH ENV</b> (afinação).')
+    story.append(shot_block('env', [(16, 62), (22, 75), (80, 102), (160, 137), (160, 163)], [
         '<b>Ataque</b>: arraste o ponto para a direita para a nota entrar devagar.',
         '<b>Decay / Sustain</b>: horizontal = decay, vertical = nível de sustain.',
         '<b>Release</b>: quanto a nota demora a sumir depois de soltar a tecla.',
-        'Valores em texto: corte e ressonância atuais, Atk/Dec em segundos, Sus em %, Rel em segundos.'],
-        title='ENV · Envelope de amplitude', note='Arraste diretamente os círculos do gráfico.'))
+        'Ataque e decay em segundos.',
+        'Sustain em % e release em segundos.'],
+        title='Página 1 · AMP ENV', note='Arraste diretamente os círculos do gráfico.'))
+    story.append(shot_block('env2', [(160, 64), (160, 110), (160, 142), (160, 174), (160, 205)], [
+        'Forma do envelope do filtro: sobe no ataque e cai no decay. A altura é o AMOUNT.',
+        '<b>FILTER ENV AMOUNT</b>: quanto o envelope abre o cutoff a cada nota.',
+        '<b>FILTER ENV ATTACK</b>: tempo de subida.',
+        '<b>FILTER ENV DECAY</b>: tempo de queda (curto = "plick", longo = "uau").',
+        '<b>VELOCITY &gt; FILTER</b>: notas mais fortes abrem mais o filtro.'], title='Página 2 · FILTER ENV'))
+    story.append(shot_block('env3', [(160, 75), (160, 132), (160, 164), (160, 197)], [
+        'Curva do envelope de pitch.',
+        '<b>PITCH ENV AMOUNT</b>: em quantos semitons a nota começa acima antes de voltar ao tom.',
+        '<b>PITCH ENV DECAY</b>: duração dessa queda.',
+        'Dica de uso: kicks, zaps e toms com decay curto.'], title='Página 3 · PITCH ENV'))
+    story.append(CondPageBreak(110 * mm))
+
+    # ----- 4. FLT
+    story += section('4 · ABA FLT', 'Filtro')
     story.append(shot_block('flt1', [(160, 60), (229, 82), (160, 140), (160, 172), (160, 203)], [
         'Curva de resposta do filtro (tipo e inclinação no título).',
         '<b>Arraste o ponto</b>: horizontal = cutoff, vertical = ressonância.',
         '<b>CUTOFF FREQ</b> (o mesmo do encoder).',
         '<b>RESSONÂNCIA</b>: realça a frequência de corte (até auto-oscilar).',
-        '<b>FILT AMOUNT</b>: quanto o envelope do filtro abre o cutoff a cada nota.'], title='FLT · Página 1'))
-    story.append(shot_block('flt2', [(160, 50), (160, 82), (160, 110), (160, 140), (160, 172), (160, 203)], [
+        '<b>DRIVE</b>: saturação antes do filtro.'], title='Página 1 · FILTER'))
+    story.append(shot_block('flt2', [(160, 50), (160, 80), (160, 114), (160, 160)], [
         '<b>LP / BP / HP</b>: passa-baixa, passa-banda, passa-alta.',
         '<b>12 dB / 24 dB</b>: inclinação (24 dB é mais fechado, estilo Moog).',
-        '<b>DRIVE</b>: saturação antes do filtro.',
-        '<b>FILTER ENV ATTACK</b>: ataque do envelope do filtro.',
-        '<b>FILTER ENV DECAY</b>: decaimento do envelope do filtro.',
-        '<b>WAVEFOLDER</b>: dobra a onda (timbre "West Coast"). Combine com SIN ou TRI.'], title='FLT · Página 2'))
+        '<b>WAVEFOLDER</b>: dobra a onda (timbre "West Coast"). Combine com SIN ou TRI.',
+        'Lembretes rápidos de cada opção.'], title='Página 2 · MODE / FOLD',
+        note='O envelope do filtro fica na aba ENV, página FILTER ENV.'))
     story.append(shot_block('flt_fine', [(95, 127), (160, 140)], [
         'O rótulo <b>FINE 1/4</b> aparece enquanto o dedo está longe da barra.',
         'O valor anda 4x mais devagar que o dedo: bom para acertar o cutoff no ponto exato.'],
         title='Ajuste FINE em ação'))
     story.append(CondPageBreak(110 * mm))
 
-    # ----- 4. MOD
-    story += section('4 · ABA MOD', 'Modulação', 'A aba MOD tem <b>4 páginas</b>: LFO, pitch, vozes e matriz.')
+    # ----- 5. MOD
+    story += section('5 · ABA MOD', 'Modulação', 'A aba MOD tem <b>3 páginas</b>: LFO, MATRIX e VOICE/GLIDE.')
     story.append(shot_block('mod1', [(130, 50), (285, 50), (160, 92), (160, 140), (160, 172), (160, 203)], [
         '<b>Formas do LFO</b>: SIN, TRI, SAW, SQR e S&amp;H (aleatório em degraus).',
         '<b>SYNC</b>: o LFO segue o BPM do sequenciador e reinicia no PLAY.',
@@ -485,28 +510,23 @@ def build():
         '<b>LFO RATE</b>: em Hz; com SYNC mostra a divisão (2 compassos a 1/32, com tercinas).',
         '<b>LFO DEPTH</b>: quanto o LFO mexe no cutoff.',
         '<b>DETUNE</b>: desafinação da supersaw.'], title='Página 1 · LFO'))
-    story.append(shot_block('mod2', [(160, 60), (160, 140), (160, 172), (160, 203)], [
-        'Curva do envelope de pitch.',
-        '<b>PITCH ENV AMOUNT</b>: em quantos semitons a nota começa desafinada antes de voltar ao tom (kicks, zaps).',
-        '<b>PITCH ENV DECAY</b>: duração dessa queda.',
-        '<b>VELOCITY &gt; FILTER</b>: notas mais fortes abrem mais o filtro.'], title='Página 2 · Pitch e velocity'))
+    story.append(shot_block('mod4b', [(95, 62), (220, 110), (160, 182), (160, 205)], [
+        'Célula selecionada (LFO &gt; CUTOFF = +60).',
+        '<b>Grade</b>: linhas = destino (CUTOFF, PITCH, PWM/WT, VOLUME); colunas = fonte (LFO, F.ENV, A.ENV, VEL).',
+        '<b>Barra bipolar</b>: arraste para a direita (+) ou esquerda (-).',
+        'Toque de novo na célula já selecionada para zerá-la.'], title='Página 2 · MATRIX',
+        note='Exemplo da imagem: o LFO abre o filtro (+60) e o envelope de amplitude baixa um pouco o pitch (-35).'))
     story.append(shot_block('mod3', [(160, 52), (160, 95), (160, 130), (160, 198)], [
         '<b>POLY</b>: até 4 notas. <b>MONO</b>: 1 nota, envelope reinicia. '
         '<b>LEGATO</b>: notas ligadas deslizam sem reiniciar.',
         '<b>GLIDE TIME</b>: tempo do portamento (também vale para o SLIDE do sequenciador).',
         'Resumo dos modos.',
         '<b>CPU LOAD</b>: uso do processador de áudio. Acima de ~85% reduza unison ou efeitos.'],
-        title='Página 3 · Vozes'))
-    story.append(shot_block('mod4b', [(95, 62), (220, 110), (160, 182), (160, 205)], [
-        'Célula selecionada (LFO &gt; CUTOFF = +60).',
-        '<b>Grade</b>: linhas = destino (CUTOFF, PITCH, PWM/WT, VOLUME); colunas = fonte (LFO, F.ENV, A.ENV, VEL).',
-        '<b>Barra bipolar</b>: arraste para a direita (+) ou esquerda (-).',
-        'Toque de novo na célula já selecionada para zerá-la.'], title='Página 4 · Matriz de modulação',
-        note='Exemplo da imagem: o LFO abre o filtro (+60) e o envelope de amplitude baixa um pouco o pitch (-35).'))
+        title='Página 3 · VOICE/GLIDE'))
     story.append(CondPageBreak(110 * mm))
 
     # ----- 5. SEQ
-    story += section('5 · ABA SEQ', 'Sequenciador de 16 passos',
+    story += section('6 · ABA SEQ', 'Sequenciador de 16 passos',
                      'Tem <b>4 padrões</b> (A a D), cada um com 16 passos. Cada passo guarda nota, oitava, accent, '
                      'slide, gate, probabilidade e ratchet.')
     story.append(shot_block('seq1', [(54, 39), (162, 39), (229, 39), (276, 39), (313, 39), (39, 70),
@@ -543,7 +563,7 @@ def build():
     story.append(CondPageBreak(110 * mm))
 
     # ----- 6. FX
-    story += section('6 · ABA FX', 'Efeitos',
+    story += section('7 · ABA FX', 'Efeitos',
                      'Quatro efeitos em série: <b>BIT → CHORUS → DELAY → REVERB</b>. Escolha qual editar nos '
                      'botões do topo ou com swipe. Delay e reverb não gastam CPU com o MIX em 0.')
     fx = [('fx1', 'DLY · Delay ping-pong', ['<b>DLY REV CHR BIT</b>: qual efeito editar.',
@@ -569,7 +589,7 @@ def build():
     story.append(CondPageBreak(110 * mm))
 
     # ----- 7. PRE
-    story += section('7 · ABA PRE', 'Presets, nomes e MIDI map')
+    story += section('8 · ABA PRE', 'Presets, nomes e MIDI map')
     story.append(shot_block('pre1', [(82, 46), (74, 136), (150, 136), (226, 136), (312, 136), (210, 170)], inline=True, items=[
         '<b>8 slots</b>: toque para carregar. O slot atual fica preto.',
         '<b>SAVE</b>: grava o som atual no slot atual (toque 2x).',
@@ -589,12 +609,12 @@ def build():
         '<b>16 parâmetros</b> com o CC MIDI que controla cada um.',
         '<b>DEFAULT MAP</b>: volta ao mapa de fábrica.',
         '<b>CLEAR ALL</b>: apaga todos os CCs.',
-        '<b>TOUCH CAL</b>: calibração do touch (seção 9).',
+        '<b>TOUCH CAL</b>: calibração do touch (seção 10).',
         'Para mapear: toque no parâmetro e mexa o knob/slider do controlador.'], title='Página 2 · MIDI map'))
     story.append(CondPageBreak(110 * mm))
 
     # ----- 8. MIDI
-    story += section('8 · MIDI', 'Usando com teclado, controlador e DAW')
+    story += section('9 · MIDI', 'Usando com teclado, controlador e DAW')
     story.append(table([
         ['Mensagem', 'O que faz'],
         ['Note On/Off (24-108)', 'Toca notas em qualquer canal. Velocity afeta volume (e filtro, se VELOCITY &gt; FILTER).'],
@@ -620,7 +640,7 @@ def build():
 
     # ----- 9. calibração
     story.append(Spacer(1, 6))
-    story += section('9 · MANUTENÇÃO', 'Calibrar o touch')
+    story += section('10 · MANUTENÇÃO', 'Calibrar o touch')
     story.append(shot_block('cal', [(24, 24), (160, 75), (160, 96)], [
         'Toque bem no centro da cruz (usa ponta de caneta ou unha para mais precisão).',
         'Aparecem 3 cruzes: dois cantos e uma de conferência no centro.',
@@ -632,25 +652,25 @@ def build():
     story.append(CondPageBreak(110 * mm))
 
     # ----- 10. receitas
-    story += section('10 · RECEITAS', 'Sons rápidos para começar',
+    story += section('11 · RECEITAS', 'Sons rápidos para começar',
                      'Parta do preset <b>INIT</b> (PRE p1, slot 1) e ajuste como abaixo.')
     recipes = [
         ['Som', 'Como fazer'],
-        ['Baixo ácido (303)', 'OSC p1: SAW · MOD p3: MONO, GLIDE ~60 ms · FLT p1: CUTOFF 30%, RESSONÂNCIA 70%, '
-                              'FILT AMOUNT 70% · SEQ p2: ACCENT SWEEP 60% · marque ACCENT e SLIDE em alguns passos. '
+        ['Baixo ácido (303)', 'OSC p1: SAW · MOD p3: MONO, GLIDE ~60 ms · FLT p1: CUTOFF 30%, RESSONÂNCIA 70% · '
+                              'ENV p2: FILTER ENV AMOUNT 70% · SEQ p2: ACCENT SWEEP 60% · marque ACCENT e SLIDE em alguns passos. '
                               'Gire o encoder durante o PLAY.'],
         ['Pad largo', 'OSC p1: SSW · ENV: ataque e release longos · OSC p5: UNISON x3 · FX CHR: MIX 50% · FX REV: MIX 40%.'],
         ['Sino / metal', 'OSC p1: SIN · OSC p3: FM AMOUNT 50%, RATIO x3,5 com SNAP desligado, FM DECAY curto · '
                          'ou OSC p4: RING MOD com SEMITONES +7.'],
         ['Wobble', 'MOD p1: SIN + SYNC, RATE em 1/8 · LFO DEPTH 80% · FLT p2: 24 dB · RESSONÂNCIA 50%.'],
-        ['Kick / zap', 'OSC p1: SIN · MOD p2: PITCH ENV AMOUNT alto, DECAY 40-80 ms · ENV: decay curto, sustain 0.'],
+        ['Kick / zap', 'OSC p1: SIN · ENV p3: PITCH ENV AMOUNT alto, DECAY 40-80 ms · ENV p1: decay curto, sustain 0.'],
         ['Textura que evolui', 'OSC p6: banco VOCAL · POSITION LFO AMOUNT 50% · MOD p1: TRI devagar · FX DLY MIX 30%.'],
         ['West Coast', 'OSC p1: TRI · FLT p2: WAVEFOLDER 50-80% · matriz: A.ENV &gt; CUTOFF positivo.'],
     ]
     story.append(table(recipes, [36 * mm, W - 36 * mm]))
     story.append(Spacer(1, 10))
 
-    story += section('11 · PROBLEMAS', 'Solução de problemas')
+    story += section('12 · PROBLEMAS', 'Solução de problemas')
     story.append(table([
         ['Sintoma', 'O que fazer'],
         ['Erro ao compilar "Adafruit_USBD_MIDI does not name a type"', 'Arduino IDE: <b>Ferramentas &gt; USB Stack &gt; '
@@ -660,8 +680,8 @@ def build():
         ['Som distorcido / CLIP aceso', 'Baixe VOLUME, DRIVE, WAVEFOLDER ou os MIX dos efeitos. Ressonância alta '
                                         'com 24 dB também satura.'],
         ['Nota presa', 'Segure o encoder parado por 0,8 s (pânico) ou mande CC 123.'],
-        ['Toque fora do lugar', 'Calibre o touch (seção 9).'],
-        ['Estalos / falhas no áudio', 'CPU alta: confira MOD p3. Reduza o UNISON ou desligue efeitos que não usa.'],
+        ['Toque fora do lugar', 'Calibre o touch (seção 10).'],
+        ['Estalos / falhas no áudio', 'CPU alta: confira MOD p3 (VOICE/GLIDE). Reduza o UNISON ou desligue efeitos que não usa.'],
         ['O encoder gira ao contrário', 'No código, mude <font name="Mono">ENC_INVERT</font> e regrave.'],
         ['O SEQ não anda', 'Em MIDI SYNC ele espera o clock da DAW. Volte para INT CLOCK em SEQ p2.'],
     ], [52 * mm, W - 52 * mm]))

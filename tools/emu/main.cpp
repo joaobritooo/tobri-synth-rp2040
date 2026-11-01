@@ -72,12 +72,18 @@ int main() {
     page(PAGE_OSC, 4); shot("osc5");
     page(PAGE_OSC, 5); shot("osc6");
     page(PAGE_ENV, 0); shot("env");
+    {
+        float fa = paramFiltAtt, fd = paramFiltDec, pa = paramPitchAmt, pd = paramPitchDecMs;
+        paramFiltAtt = 0.05f; paramFiltDec = 0.6f; paramPitchAmt = 0.3f; paramPitchDecMs = 120.0f;
+        page(PAGE_ENV, 1); shot("env2");
+        page(PAGE_ENV, 2); shot("env3");
+        paramFiltAtt = fa; paramFiltDec = fd; paramPitchAmt = pa; paramPitchDecMs = pd;
+    }
     page(PAGE_FLT, 0); shot("flt1");
     page(PAGE_FLT, 1); shot("flt2");
     page(PAGE_MOD, 0); shot("mod1");
     page(PAGE_MOD, 1); shot("mod2");
     page(PAGE_MOD, 2); shot("mod3");
-    page(PAGE_MOD, 3); shot("mod4");
     onNoteOff(1, 57, 0);
     run(600);
     page(PAGE_SEQ, 0); shot("seq1");
@@ -91,7 +97,7 @@ int main() {
     page(PAGE_SEQ, 0); seqCmd = 1; run(1100); shot("seq1_play");
     tap(250, 48); shot("seq1_undo");
     seqCmd = 2; run(100);
-    mmAmt[0] = 0.6f; mmAmt[6] = -0.35f; mmSel = 0; page(PAGE_MOD, 3); shot("mod4b");
+    mmAmt[0] = 0.6f; mmAmt[6] = -0.35f; mmSel = 0; page(PAGE_MOD, 1); shot("mod4b");
     page(PAGE_FLT, 0);
     touch(150, 133); run(60);
     for (int i = 0; i < 10; i++) { touch(150 + i * 2, 133 + i * 6); run(15); }
@@ -99,6 +105,8 @@ int main() {
     release();
     page(PAGE_PRE, 0); tap(40, 148); shot("pre_save");
     page(PAGE_PRE, 0); startNameEdit(); shot("pre_name");
+    page(PAGE_OSC, 5); tap(25, 15); shot("menu_osc");
+    tap(300, 200);
     drawCalScreen(0, nullptr); shotRaw("cal");
     return 0;
 }
