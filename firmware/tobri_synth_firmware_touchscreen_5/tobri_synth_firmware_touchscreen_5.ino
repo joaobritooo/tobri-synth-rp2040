@@ -17,6 +17,7 @@
    v7: toque na aba ativa abre o MENU das subpáginas (com nomes). ENV agora tem
          AMP / FILTER ENV / PITCH ENV; FLT = FILTER (cutoff, reso, drive) + MODE
          (tipo, inclinação, wavefolder); MOD = LFO / MATRIX / VOICES
+   v9: abertura com as cores do menu + transição (varredura e abas caindo)
    v8: PRE p1 > RANDOM sorteia um som com "cara" (BASS, LEAD, PAD, PLUCK, KEYS) dentro de
          faixas musicais; UNDO volta ao som anterior (e REDO refaz) | tela de abertura
          com números caindo estilo Matrix
@@ -5765,9 +5766,12 @@ TouchSlider *ALL_SLIDERS[] = {
 
 // ============================================================================
 // TELA DE ABERTURA: números caindo (estilo Matrix) e o nome no meio (~3 s)
+// Usa a mesma paleta da interface (COL_BG / COL_TEXT / cinzas), então fica com as
+// mesmas cores do menu em qualquer painel (inclusive IPS que inverte as cores).
+// Termina com uma linha de varredura que limpa a tela.
 // ============================================================================
 void bootSplash() {
-    const uint16_t G_HEAD = 0xD7FA, G_MID = 0x07E0, G_DIM = 0x0300, BLACK = 0x0000;
+    const uint16_t G_HEAD = COL_TEXT, G_MID = COL_MUTED, G_DIM = 0xA554, BLACK = COL_BG;
     const int COLS = 40, ROWS = 24, CW = 8, CH = 10;
     const int BX = 26, BY = 74, BW = 268, BH = 96;           // caixa do título
     int16_t head[COLS];
@@ -5788,20 +5792,20 @@ void bootSplash() {
         bool box = (fr >= TITLE_AT);
         if (fr == TITLE_AT) {
             tft.fillRoundRect(BX, BY, BW, BH, 8, BLACK);
-            tft.drawRoundRect(BX, BY, BW, BH, 8, G_MID);
+            tft.drawRoundRect(BX, BY, BW, BH, 8, G_HEAD);
             tft.drawRoundRect(BX + 2, BY + 2, BW - 4, BH - 4, 6, G_DIM);
         }
         if (box) {                                           // título "digitado", uma letra por quadro
             int n = fr - TITLE_AT + 1;
             int tl = (int)strlen(title);
             tft.setTextSize(3);
-            tft.setTextColor(G_MID);
+            tft.setTextColor(G_HEAD);
             tft.setCursor(160 - tl * 9, BY + 16);
             for (int k = 0; k < tl && k < n; k++) tft.print(title[k]);
             if (n == tl + 2) {
                 tft.drawFastHLine(BX + 30, BY + 46, BW - 60, G_DIM);
                 tft.setTextSize(1);
-                tft.setTextColor(G_DIM + 0x0200);
+                tft.setTextColor(G_MID);
                 tft.setCursor(160 - (int)strlen(by1) * 3, BY + 54);
                 tft.print(by1);
                 tft.setTextSize(2);
@@ -5833,7 +5837,35 @@ void bootSplash() {
         }
         delay(30);
     }
-    delay(400);
+    delay(500);
+
+    // transição: linha de varredura descendo e apagando a abertura
+    for (int y = 0; y < 240; y += 6) {
+        tft.fillRect(0, y, 320, 6, COL_BG);
+        if (y + 8 < 240) {
+            tft.drawFastHLine(0, y + 6, 320, COL_TEXT);
+            tft.drawFastHLine(0, y + 7, 320, COL_MUTED);
+        }
+        delay(8);
+    }
+}
+
+// depois da abertura as abas "caem" uma a uma antes da página aparecer
+void drawTabsIntro() {
+    for (int i = 0; i < TAB_COUNT; i++) {
+        int x = TAB_X0 + i * (TAB_W + TAB_GAP);
+        for (int y = -22; y <= 4; y += 13) {                      // desce em 3 passos
+            tft.fillRect(x, 0, TAB_W, 32, COL_BG);
+            tft.drawRoundRect(x, y, TAB_W, 26, RADIUS, COL_BORDER);
+            tft.setTextSize(2);
+            tft.setTextColor(COL_TEXT);
+            tft.setCursor(x + (TAB_W - (int)strlen(PAGE_LABELS[i]) * 12) / 2, y + 4);
+            tft.print(PAGE_LABELS[i]);
+            delay(12);
+        }
+    }
+    tft.setTextSize(1);
+    delay(80);
 }
 
 // ============================================================================
@@ -5875,6 +5907,8 @@ void setup1() {
         tft.setTextSize(1);
         touchCalibrate();      // termina com switchPage(currentPage)
     }
+    tft.fillScreen(COL_BG);
+    drawTabsIntro();
     switchPage(PAGE_ENV);
 
     core1_booting = false;
