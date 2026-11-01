@@ -311,7 +311,7 @@ def on_page(c, doc):
     c.line(18 * mm, 14 * mm, A4[0] - 18 * mm, 14 * mm)
     c.setFont('UI', 8)
     c.setFillColor(SUB)
-    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v9')
+    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v10')
     c.drawRightString(A4[0] - 18 * mm, 9.5 * mm, str(doc.page))
     c.restoreState()
 
@@ -331,7 +331,7 @@ def on_cover(c, doc):
     c.setFont('UI', 10.5)
     y = A4[1] - 74 * mm
     for line in ('Sintetizador polifônico de 4 vozes com RP2040, tela touch de 3,2"',
-                 'USB MIDI e encoder · firmware v9',
+                 'USB MIDI e encoder · firmware v10',
                  '7 abas, 23 telas: osciladores, wavetable, FM, envelopes, filtro, LFO,',
                  'matriz de modulação, sequenciador de 16 passos, 4 efeitos e 8 presets'):
         c.drawString(20 * mm, y, line)
@@ -415,7 +415,8 @@ def build():
     story.append(Spacer(1, 2))
     story.append(Paragraph('O encoder funciona em qualquer aba e tem aceleração: devagar ele muda 0,5% por clique, '
                            'rápido muda até 2,5%. O pânico (segurar parado por 0,8 s) solta todas as notas e para o '
-                           'sequenciador. Use se alguma nota ficar presa.', st_body))
+                           'sequenciador. Use se alguma nota ficar presa. Um aperto que acontece <b>enquanto o eixo gira</b> é ignorado '
+                           '(é ruído do contato do botão), então girar nunca dá PLAY/STOP.', st_body))
     story.append(CondPageBreak(110 * mm))
 
     # ----- 2. OSC
@@ -521,12 +522,14 @@ def build():
         '<b>Barra bipolar</b>: arraste para a direita (+) ou esquerda (-).',
         'Toque de novo na célula já selecionada para zerá-la.'], title='Página 2 · MATRIX',
         note='Exemplo da imagem: o LFO abre o filtro (+60) e o envelope de amplitude baixa um pouco o pitch (-35).'))
-    story.append(shot_block('mod3', [(160, 52), (160, 95), (160, 130), (160, 198)], [
+    story.append(shot_block('mod3', [(160, 52), (160, 95), (160, 130), (160, 198), (160, 163)], [
         '<b>POLY</b>: até 4 notas. <b>MONO</b>: 1 nota, envelope reinicia. '
         '<b>LEGATO</b>: notas ligadas deslizam sem reiniciar.',
         '<b>GLIDE TIME</b>: tempo do portamento (também vale para o SLIDE do sequenciador).',
         'Resumo dos modos.',
-        '<b>CPU LOAD</b>: uso do processador de áudio. Acima de ~85% reduza unison ou efeitos.'],
+        '<b>CPU LOAD</b>: uso do processador de áudio. Acima de ~85% reduza unison ou efeitos.',
+        '<b>Teste do encoder</b>: CLK e DT mudam ao girar e STEPS conta; SW vai a 0 só quando você aperta. '
+        'NOISE conta apertos ignorados por terem vindo durante o giro.'],
         title='Página 3 · VOICE/GLIDE'))
     story.append(CondPageBreak(110 * mm))
 
@@ -694,6 +697,9 @@ def build():
         ['Nota presa', 'Segure o encoder parado por 0,8 s (pânico) ou mande CC 123.'],
         ['Toque fora do lugar', 'Calibre o touch (seção 10).'],
         ['Estalos / falhas no áudio', 'CPU alta: confira MOD p3 (VOICE/GLIDE). Reduza o UNISON ou desligue efeitos que não usa.'],
+        ['Girar o encoder dá PLAY/STOP', 'Na v10 isso é filtrado. Se ainda acontecer, abra MOD &gt; VOICE/GLIDE: '
+                                         'girando, só CLK e DT podem mudar. Se o SW muda junto, o fio do GP4 está num '
+                                         'pino de giro (A ou B) ou o GND do encoder está solto; confira a ligação.'],
         ['O encoder gira ao contrário', 'No código, mude <font name="Mono">ENC_INVERT</font> e regrave.'],
         ['O SEQ não anda', 'Em MIDI SYNC ele espera o clock da DAW. Volte para INT CLOCK em SEQ p2.'],
     ], [52 * mm, W - 52 * mm]))

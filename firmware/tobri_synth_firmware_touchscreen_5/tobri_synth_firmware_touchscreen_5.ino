@@ -17,6 +17,8 @@
    v7: toque na aba ativa abre o MENU das subpáginas (com nomes). ENV agora tem
          AMP / FILTER ENV / PITCH ENV; FLT = FILTER (cutoff, reso, drive) + MODE
          (tipo, inclinação, wavefolder); MOD = LFO / MATRIX / VOICES
+   v10: botão do encoder ignora "apertos" que acontecem enquanto o eixo gira (ruído do
+         SW); teste do encoder ao vivo em MOD > VOICE/GLIDE
    v9: abertura com as cores do menu + transição (varredura e abas caindo)
    v8: PRE p1 > RANDOM sorteia um som com "cara" (BASS, LEAD, PAD, PLUCK, KEYS) dentro de
          faixas musicais; UNDO volta ao som anterior (e REDO refaz) | tela de abertura
@@ -2538,7 +2540,8 @@ void publishParams() {
 //   segurar + girar       -> RESSONÂNCIA
 //   clique curto          -> PLAY / STOP do sequenciador
 //   segurar ~0,8 s parado -> PÂNICO (solta todas as notas e para o sequenciador)
-const uint16_t BTN_DEBOUNCE_MS = 15;
+const uint16_t BTN_DEBOUNCE_MS = 25;
+const uint16_t ENC_QUIET_MS    = 250;     // botão só vale se o eixo estava parado antes de apertar
 const uint16_t BTN_LONG_MS     = 800;
 const bool  ENC_INVERT     = false;   // true se o sentido estiver trocado
 const float ENC_STEP_FINE  = 0.005f;  // 0,5% por clique (giro lento)
@@ -2577,7 +2580,9 @@ static int8_t __not_in_flash_func(readRotaryStep)() {
 
 // interrupção nos dois pinos (CHANGE): só acumula os cliques; o loop1 aplica
 static volatile int16_t encSteps = 0;
+static volatile uint32_t encEdgeMs = 0;     // último movimento em CLK/DT (mesmo sem completar um clique)
 void __not_in_flash_func(encoderISR)() {
+    encEdgeMs = millis();
     int8_t d = readRotaryStep();
     if (d) encSteps += d;
 }
@@ -2595,7 +2600,12 @@ static bool btnDown = false, btnRaw = false;
 static unsigned long btnRawSince = 0, btnPressedAt = 0;
 static bool btnTurned = false;           // girou enquanto segurava -> não é clique
 static bool btnLongDone = false;
+static bool btnQuiet = false;            // o aperto começou com o eixo parado (aperto de verdade)
+static int32_t encStepTotal = 0;         // teste do encoder (MOD > VOICE/GLIDE)
+static uint16_t encSwNoise = 0;          // apertos ignorados porque vieram durante o giro
 
+// Encoders baratos (e fios longos ou mal presos) fazem o pino do botão "piscar" enquanto o eixo
+// gira. Um aperto que começa durante o giro é ignorado: não dá PLAY/STOP nem vira ressonância.
 static void encoderButton(unsigned long now) {
     bool raw = (digitalRead(ENC_SW) == LOW);
     if (raw != btnRaw) { btnRaw = raw; btnRawSince = now; }
@@ -2605,13 +2615,16 @@ static void encoderButton(unsigned long now) {
             btnPressedAt = now;
             btnTurned = false;
             btnLongDone = false;
-        } else if (!btnTurned && !btnLongDone) {   // soltou: clique curto
+            btnQuiet = (now - encEdgeMs >= ENC_QUIET_MS);
+            if (!btnQuiet) encSwNoise++;
+        } else if (btnQuiet && !btnTurned && !btnLongDone &&
+                   now - encEdgeMs >= 60) {          // soltou: clique curto (e o eixo não mexeu)
             seqCmd = seqRunning ? 2 : 1;
             snprintf(lastMidiMsg, sizeof(lastMidiMsg), seqRunning ? "SEQ STOP" : "SEQ PLAY");
         }
     }
     // segurou parado: pânico (uma vez por toque)
-    if (btnDown && !btnTurned && !btnLongDone && now - btnPressedAt >= BTN_LONG_MS) {
+    if (btnDown && btnQuiet && !btnTurned && !btnLongDone && now - btnPressedAt >= BTN_LONG_MS) {
         btnLongDone = true;
         if (seqRunning) seqCmd = 2;
         monoResetReq = true;             // o core de áudio solta todas as vozes
@@ -2635,8 +2648,9 @@ void readEncoder() {
     lastStepMs = now;
     float step = (perClick < ENC_FAST_MS) ? ENC_STEP_FAST : ((perClick < ENC_MID_MS) ? ENC_STEP_MID : ENC_STEP_FINE);
 
-    if (btnDown) {                       // segurando: ressonância
-        btnTurned = true;
+    encStepTotal += n;
+    if (btnDown) btnTurned = true;
+    if (btnDown && btnQuiet) {           // segurando de verdade: ressonância
         paramReso = constrain(paramReso + (float)n * step, 0.0f, 1.0f);
     } else {
         paramCutoff = constrain(paramCutoff + (float)n * step, 0.05f, 1.0f);
@@ -4244,6 +4258,8 @@ void drawCpuBar() {
     if (fw > 2) tft.fillRoundRect(11, 195, fw, 10, 3, COL_ACCENT);
 }
 
+char encTestDrawn[64] = "";
+
 void drawVoicePage() {
     drawVoiceButtons();
     drawSlider(sliderGlide);
@@ -4253,7 +4269,24 @@ void drawVoicePage() {
     tft.setCursor(8, 120); tft.print("MONO: ONE NOTE AT A TIME, ENV RETRIGGERS.");
     tft.setCursor(8, 132); tft.print("LEGATO: OVERLAPPING NOTES GLIDE (NO RETRIGGER).");
     tft.setCursor(8, 144); tft.print("GLIDE TIME ALSO SETS THE SEQUENCER SLIDE.");
+    encTestDrawn[0] = 0;
+    drawEncTest();
     drawCpuBar();
+}
+
+// teste do encoder: estado dos pinos ao vivo. Girando, CLK/DT mudam e STEPS conta;
+// SW só deve ir a 0 quando o eixo é apertado.
+void drawEncTest() {
+    char t[64];
+    snprintf(t, sizeof(t), "ENCODER  CLK:%d DT:%d SW:%d  STEPS:%+ld  NOISE:%u",
+             digitalRead(ENC_CLK), digitalRead(ENC_DT), digitalRead(ENC_SW), (long)encStepTotal, (unsigned)encSwNoise);
+    if (strcmp(t, encTestDrawn) == 0) return;
+    strcpy(encTestDrawn, t);
+    tft.fillRect(8, 158, 304, 10, COL_BG);
+    tft.setTextSize(1);
+    tft.setTextColor(COL_TEXT);
+    tft.setCursor(8, 160);
+    tft.print(t);
 }
 
 void handleVoicePageTouch(int tx, int ty, bool newPress) {
@@ -4271,6 +4304,7 @@ void handleVoicePageTouch(int tx, int ty, bool newPress) {
 void updateVoicePage() {
     if (voiceModeDrawn != (int)voiceMode) drawVoiceButtons();
     refreshSlider(sliderGlide);
+    drawEncTest();
     if (cpuDrawn != (int)cpuPct) drawCpuBar();
 }
 
@@ -5556,7 +5590,7 @@ void updateDisplay() {
             break;
     }
 
-    if (btnDown) updateTextField(8, 222, 150, 10, lastEdit, sizeof(lastEdit), COL_WARN, 1, "Reso (knob): %d%%",
+    if (btnDown && btnQuiet) updateTextField(8, 222, 150, 10, lastEdit, sizeof(lastEdit), COL_WARN, 1, "Reso (knob): %d%%",
                                  (int)(paramReso * 100.0f + 0.5f));
     else         updateTextField(8, 222, 150, 10, lastEdit, sizeof(lastEdit), COL_WARN, 1, "Cutoff (knob): %d%%",
                                  (int)(paramCutoff * 100.0f + 0.5f));

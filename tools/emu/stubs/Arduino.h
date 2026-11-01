@@ -37,11 +37,13 @@ inline void yield() {}
 #define RISING 4
 #define FALLING 5
 inline void pinMode(int, int) {}
-inline int digitalRead(int) { return HIGH; }
+extern int emuPin[32];
+inline int digitalRead(int p) { return (p >= 0 && p < 32) ? emuPin[p] : HIGH; }
 inline void digitalWrite(int, int) {}
 inline int analogRead(int) { return 0; }
 inline int digitalPinToInterrupt(int p) { return p; }
-inline void attachInterrupt(int, void (*)(), int) {}
+extern void (*emuIsr[32])();
+inline void attachInterrupt(int p, void (*f)(), int) { if (p >= 0 && p < 32) emuIsr[p] = f; }
 inline void noInterrupts() {}
 inline void interrupts() {}
 
