@@ -23,7 +23,8 @@ typedef bool boolean;
 extern unsigned long emuMs;
 inline unsigned long millis() { return emuMs; }
 inline unsigned long micros() { return emuMs * 1000UL; }
-inline void delay(unsigned long ms) { emuMs += ms; }
+extern void (*emuDelayHook)();
+inline void delay(unsigned long ms) { emuMs += ms; if (emuDelayHook) emuDelayHook(); }
 inline void delayMicroseconds(unsigned) {}
 inline void yield() {}
 

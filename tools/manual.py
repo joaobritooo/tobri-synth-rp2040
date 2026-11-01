@@ -311,7 +311,7 @@ def on_page(c, doc):
     c.line(18 * mm, 14 * mm, A4[0] - 18 * mm, 14 * mm)
     c.setFont('UI', 8)
     c.setFillColor(SUB)
-    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v7')
+    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v8')
     c.drawRightString(A4[0] - 18 * mm, 9.5 * mm, str(doc.page))
     c.restoreState()
 
@@ -331,7 +331,7 @@ def on_cover(c, doc):
     c.setFont('UI', 10.5)
     y = A4[1] - 74 * mm
     for line in ('Sintetizador polifônico de 4 vozes com RP2040, tela touch de 3,2"',
-                 'USB MIDI e encoder · firmware v7',
+                 'USB MIDI e encoder · firmware v8',
                  '7 abas, 23 telas: osciladores, wavetable, FM, envelopes, filtro, LFO,',
                  'matriz de modulação, sequenciador de 16 passos, 4 efeitos e 8 presets'):
         c.drawString(20 * mm, y, line)
@@ -357,7 +357,7 @@ def build():
     # ----- 1. primeiros passos
     story += section('1 · COMEÇANDO', 'Primeiros passos')
     steps = [
-        ['1', '<b>Ligue o cabo USB</b> no computador ou num carregador. A tela acende na aba <b>ENV</b>.'],
+        ['1', '<b>Ligue o cabo USB</b> no computador ou num carregador. Aparece a abertura (números caindo e o nome TOBRI SYNTH) e, depois de uns 3 s, a aba <b>ENV</b>.'],
         ['2', '<b>Conecte a saída OUT (P2)</b> num fone, caixa ativa ou mesa. Comece com o volume baixo.'],
         ['3', '<b>Toque notas</b>: por um teclado/controlador USB MIDI ligado no computador (o synth aparece '
               'como dispositivo MIDI "RP2040 Synth"), ou sem nada externo: abra a aba <b>SEQ</b> e toque <b>PLAY</b> '
@@ -367,6 +367,11 @@ def build():
         ['5', '<b>Gire o encoder</b> enquanto toca: ele abre e fecha o filtro em qualquer tela.'],
     ]
     story.append(legend([s[1] for s in steps]))
+    story.append(Spacer(1, 6))
+    story.append(shot_block('splash', [(160, 100), (160, 150)], [
+        'Abertura: números caindo no estilo Matrix e o nome sendo "digitado".',
+        'Crédito do projeto. Dura uns 3 s; o áudio já está pronto durante a abertura.'],
+        title='Tela de abertura', note='Para calibrar o touch na partida, mantenha o dedo na tela até o fim da abertura.'))
     story.append(Spacer(1, 6))
     story.append(tip('As notas MIDI aceitas vão de <b>24 a 108</b> (C1 a C8), em qualquer canal. '
                      'Mensagens fora dessa faixa aparecem na barra de status mas não tocam.'))
@@ -590,15 +595,22 @@ def build():
 
     # ----- 7. PRE
     story += section('8 · ABA PRE', 'Presets, nomes e MIDI map')
-    story.append(shot_block('pre1', [(82, 46), (74, 136), (150, 136), (226, 136), (312, 136), (210, 170)], inline=True, items=[
+    story.append(shot_block('pre1', [(82, 46), (74, 136), (150, 136), (226, 136), (312, 136), (150, 168), (306, 168), (200, 204)], inline=True, items=[
         '<b>8 slots</b>: toque para carregar. O slot atual fica preto.',
         '<b>SAVE</b>: grava o som atual no slot atual (toque 2x).',
         '<b>NAME</b>: abre o teclado para renomear o slot.',
         '<b>FACTORY</b>: volta o slot ao som de fábrica (toque 2x).',
         '<b>PTN ON/OFF</b>: se o preset também carrega o padrão do sequenciador.',
-        'Mensagens (carregado, gravado, confirmação).'], title='Página 1 · Presets',
+        '<b>RANDOM</b>: sorteia um som novo (veja abaixo).',
+        '<b>UNDO / REDO</b>: volta ao som de antes do RANDOM; tocar de novo refaz. Riscado = nada para desfazer.',
+        'Mensagens (carregado, gravado, tipo do som sorteado).'], title='Página 1 · Presets',
         note='Tudo é gravado: sliders, formas de onda, wavetable, FM, OSC2, matriz, LFO, accent, efeitos e o padrão.'))
-    story.append(shot_block('pre_save', [(74, 136), (170, 166)], inline=True, items=[
+    story.append(shot_block('pre_rnd', [(150, 168), (176, 208)], inline=True, items=[
+        'Cada toque sorteia primeiro o <b>tipo</b> (BASS, LEAD, PAD, PLUCK ou KEYS) e depois forma de onda, '
+        'envelopes, filtro, LFO, OSC2, FM, unison e efeitos dentro de faixas que funcionam para aquele tipo.',
+        'O tipo sorteado aparece aqui. Volume, modo de voz e sequência não mudam.'], title='RANDOM inteligente',
+        note='Gostou? Toque SAVE (2x) para guardar no slot atual. Carregar outro slot apaga o UNDO.'))
+    story.append(shot_block('pre_save', [(74, 136), (226, 208)], inline=True, items=[
         'Primeiro toque: o botão vira <b>SURE?</b> por 2 s.',
         'Toque de novo para confirmar. Se esperar, nada é gravado.'], title='Gravando (confirmação)'))
     story.append(shot_block('pre_name', [(160, 48), (160, 130), (270, 190)], [

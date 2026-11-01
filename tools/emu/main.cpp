@@ -8,6 +8,7 @@ EEPROMStub EEPROM;
 USBDeviceStub USBDevice;
 bool emuTouch = false;
 int emuTX = 0, emuTY = 0;
+void (*emuDelayHook)() = nullptr;
 
 TS_Point XPT2046_Touchscreen::getPoint() {
     TS_Point p;
@@ -52,9 +53,15 @@ static void shotRaw(const char *name) {
 
 static void page(Page p, int sub) { subPg[p] = (uint8_t)sub; switchPage(p); }
 
+// captura a abertura no fim (cada quadro da chuva chama delay(30))
+static int splashCalls = 0;
+static void splashHook() { if (++splashCalls == 101) shotRaw("splash"); }
+
 int main() {
     setup();
+    emuDelayHook = splashHook;
     setup1();
+    emuDelayHook = nullptr;
     run(200);
 
     // uma nota segurando para o osciloscópio e o medidor terem o que mostrar
@@ -105,6 +112,7 @@ int main() {
     release();
     page(PAGE_PRE, 0); tap(40, 148); shot("pre_save");
     page(PAGE_PRE, 0); startNameEdit(); shot("pre_name");
+    page(PAGE_PRE, 0); tap(80, 180); shot("pre_rnd");
     page(PAGE_OSC, 5); tap(25, 15); shot("menu_osc");
     tap(300, 200);
     drawCalScreen(0, nullptr); shotRaw("cal");

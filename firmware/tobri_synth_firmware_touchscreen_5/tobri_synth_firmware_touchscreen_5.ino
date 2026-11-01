@@ -17,6 +17,9 @@
    v7: toque na aba ativa abre o MENU das subpáginas (com nomes). ENV agora tem
          AMP / FILTER ENV / PITCH ENV; FLT = FILTER (cutoff, reso, drive) + MODE
          (tipo, inclinação, wavefolder); MOD = LFO / MATRIX / VOICES
+   v8: PRE p1 > RANDOM sorteia um som com "cara" (BASS, LEAD, PAD, PLUCK, KEYS) dentro de
+         faixas musicais; UNDO volta ao som anterior (e REDO refaz) | tela de abertura
+         com números caindo estilo Matrix
    ENCODER: girar = CUTOFF, segurar+girar = RESSONÂNCIA, clique = PLAY/STOP do
          SEQ, segurar parado = PÂNICO (lido por interrupção, com aceleração)
    Áudio 100% em inteiros (sem float por amostra); os floats são convertidos
@@ -253,6 +256,10 @@ struct PresetData {
     int8_t  oct[16];
     uint8_t flags[16];
 };
+
+// cópia do som para o UNDO/REDO do RANDOM (PRE p1)
+struct SoundSnap { float f[48]; uint8_t b[12]; float mm[16]; uint8_t wave; };
+uint8_t rndUndoState = 0;            // 0 = nada para desfazer, 1 = UNDO disponível, 2 = REDO disponível
 
 // Preset de fábrica
 struct FactoryPreset {
@@ -3492,6 +3499,8 @@ Btn btnPreSave = {8,   134, 68, 28, "SAVE"};
 Btn btnPreName = {80,  134, 68, 28, "NAME"};
 Btn btnPreFact = {152, 134, 80, 28, "FACTORY"};
 Btn btnPrePtn  = {236, 134, 76, 28, "PTN ON"};
+Btn btnPreRnd  = {8,   166, 150, 28, "RANDOM"};
+Btn btnPreUndo = {162, 166, 150, 28, "UNDO"};
 Btn btnMapDef  = {8,   182, 98, 20, "DEFAULT MAP"};
 Btn btnMapClr  = {111, 182, 98, 20, "CLEAR ALL"};
 Btn btnTchCal  = {214, 182, 98, 20, "TOUCH CAL"};
@@ -4628,13 +4637,16 @@ void drawPresetButtons() {
     drawBtn(btnPreName, false);
     drawButtonEx(btnPreFact, factArmed, factArmed ? "SURE?" : "FACTORY", 1);
     drawButtonEx(btnPrePtn, presetLoadPattern, presetLoadPattern ? "PTN ON" : "PTN OFF", 1);
+    drawButtonEx(btnPreRnd, false, "RANDOM", 2);
+    drawButtonEx(btnPreUndo, false, (rndUndoState == 2) ? "REDO" : "UNDO", 2);
+    if (rndUndoState == 0) tft.drawFastHLine(btnPreUndo.x + 40, btnPreUndo.y + 14, btnPreUndo.w - 80, COL_MUTED);
 }
 
 void presetShowMsg() {
-    tft.fillRect(8, 170, 304, 18, COL_BG);
+    tft.fillRect(8, 200, 304, 18, COL_BG);
     tft.setTextSize(2);
     tft.setTextColor(COL_TEXT);
-    tft.setCursor(8, 170);
+    tft.setCursor(8, 200);
     tft.print(presetMsg);
     tft.setTextSize(1);
 }
@@ -4776,16 +4788,171 @@ void updateMapPage() {
     if (mapLearnDrawn != (int)mapLearnIdx || mapCntDrawn != (int)mapChangeCnt) drawMapPage();
 }
 
+// ============================================================================
+// RANDOM INTELIGENTE: sorteia primeiro o "tipo" de som e depois cada parâmetro dentro
+// de faixas que funcionam para aquele tipo. Volume, modo de voz e sequência não mudam.
+// UNDO troca o som atual pelo de antes (tocar de novo = REDO).
+// ============================================================================
+#define SNAP_FLOATS(X) X(paramAttack) X(paramDecay) X(paramSustain) X(paramRelease) \
+    X(paramCutoff) X(paramReso) X(paramFiltAmt) X(paramFiltAtt) X(paramFiltDec) X(paramDrive) X(paramFold) \
+    X(paramLfoRate) X(paramLfoDepth) X(paramDetune) X(paramPwm) X(paramPwmMod) X(paramSubLevel) \
+    X(paramPitchAmt) X(paramPitchDecMs) X(paramVelFilt) X(paramFmAmt) X(paramFmRatio) X(paramFmDecMs) \
+    X(paramFmEnv) X(paramFmFb) X(paramO2Lvl) X(paramO2Semi) X(paramO2Det) X(paramUniDet) X(paramWtPos) \
+    X(paramWtLfo) X(paramDelayTime) X(paramDelayFb) X(paramDelayMix) X(paramRevSize) X(paramRevDamp) \
+    X(paramRevMix) X(paramChoRate) X(paramChoDepth) X(paramChoMix) X(paramCrBits) X(paramCrRate) X(paramCrMix)
+#define SNAP_BYTES(X) X(subMode) X(filtMode) X(filtSlope) X(lfoShape) X(lfoSync) X(o2Wave) X(o2Sync) \
+    X(o2Ring) X(uniSel) X(wtBank)
+
+SoundSnap rndSnap;
+
+void soundCapture(SoundSnap &sn) {
+    int i = 0, k = 0;
+#define CAP_F(v) sn.f[i++] = v;
+#define CAP_B(v) sn.b[k++] = (uint8_t)(v);
+    SNAP_FLOATS(CAP_F) SNAP_BYTES(CAP_B)
+#undef CAP_F
+#undef CAP_B
+    for (int j = 0; j < 16; j++) sn.mm[j] = mmAmt[j];
+    sn.wave = (uint8_t)currentWave;
+}
+
+void soundRestore(const SoundSnap &sn) {
+    int i = 0, k = 0;
+#define RES_F(v) v = sn.f[i++];
+#define RES_B(v) v = sn.b[k++];
+    SNAP_FLOATS(RES_F) SNAP_BYTES(RES_B)
+#undef RES_F
+#undef RES_B
+    for (int j = 0; j < 16; j++) mmAmt[j] = sn.mm[j];
+    currentWave = (Waveform)sn.wave;
+    syncKnobsFromParams();
+}
+
+static float rr(float a, float b) { return a + (b - a) * (float)random(10001) / 10000.0f; }
+static bool  chance(int pct) { return random(100) < pct; }
+template <size_t N> static Waveform pickWave(const Waveform (&w)[N]) { return w[random(N)]; }
+
+const char* const RND_KIND[5] = {"BASS", "LEAD", "PAD", "PLUCK", "KEYS"};
+
+void soundRandomize() {
+    soundCapture(rndSnap);
+    rndUndoState = 1;
+    randomSeed(micros() ^ (millis() << 8));
+    int kind = (int)random(5);
+
+    // ponto de partida neutro
+    paramDrive = 0.0f; paramFold = 0.0f; paramPitchAmt = 0.0f; paramVelFilt = rr(0.0f, 0.35f);
+    paramFmAmt = 0.0f; paramO2Lvl = 0.0f; o2Sync = false; o2Ring = false; uniSel = 0;
+    paramSubLevel = 0.0f; paramPwmMod = 0.0f; paramWtLfo = 0.0f; paramLfoDepth = 0.0f;
+    paramDelayMix = 0.0f; paramChoMix = 0.0f; paramCrMix = 0.0f; paramCrBits = 16.0f; paramCrRate = 1.0f;
+    for (int j = 0; j < 16; j++) mmAmt[j] = 0.0f;
+    filtMode = 0;
+    filtSlope = chance(50) ? 1 : 0;
+    paramPwm = rr(0.2f, 0.8f);
+    paramDetune = rr(0.25f, 0.7f);
+    lfoShape = (uint8_t)random(5);
+    lfoSync = chance(30);
+    paramLfoRate = rr(0.3f, 6.0f);
+    paramRevSize = rr(0.35f, 0.85f); paramRevDamp = rr(0.2f, 0.7f);
+    paramDelayTime = rr(120.0f, 480.0f); paramDelayFb = rr(0.2f, 0.55f);
+    paramChoRate = rr(0.3f, 1.5f); paramChoDepth = rr(0.3f, 0.8f);
+
+    if (kind == 0) {                                         // BASS: curto, grave, filtro fechado
+        const Waveform w[] = {WAVE_SAW, WAVE_SQUARE, WAVE_PULSE, WAVE_SAW, WAVE_TABLE};
+        currentWave = pickWave(w);
+        paramAttack = rr(0.002f, 0.01f); paramDecay = rr(0.1f, 0.5f); paramSustain = rr(0.3f, 0.8f); paramRelease = rr(0.04f, 0.2f);
+        paramCutoff = rr(0.2f, 0.5f); paramReso = rr(0.1f, 0.6f);
+        paramFiltAmt = rr(0.3f, 0.8f); paramFiltAtt = rr(0.001f, 0.01f); paramFiltDec = rr(0.1f, 0.5f);
+        if (chance(55)) { paramSubLevel = rr(0.3f, 0.7f); subMode = chance(50) ? 1 : 0; }
+        if (chance(35)) { paramO2Lvl = rr(0.3f, 0.6f); const float st[] = {-12, 0, 7, 12}; paramO2Semi = st[random(4)]; paramO2Det = rr(-8, 8); o2Wave = (uint8_t)random(4); }
+        if (chance(30)) paramDrive = rr(0.1f, 0.45f);
+        if (chance(12)) { paramPitchAmt = rr(0.05f, 0.2f); paramPitchDecMs = rr(20, 80); }
+        paramRevMix = rr(0.0f, 0.1f);
+    } else if (kind == 1) {                                  // LEAD: brilhante, sustentado
+        const Waveform w[] = {WAVE_SAW, WAVE_SQUARE, WAVE_PULSE, WAVE_SUPERSAW, WAVE_TABLE};
+        currentWave = pickWave(w);
+        paramAttack = rr(0.002f, 0.03f); paramDecay = rr(0.2f, 0.8f); paramSustain = rr(0.5f, 0.9f); paramRelease = rr(0.1f, 0.4f);
+        paramCutoff = rr(0.45f, 0.8f); paramReso = rr(0.05f, 0.5f);
+        paramFiltAmt = rr(0.1f, 0.5f); paramFiltAtt = rr(0.001f, 0.05f); paramFiltDec = rr(0.2f, 0.8f);
+        if (chance(60)) {
+            paramO2Lvl = rr(0.3f, 0.7f); o2Wave = (uint8_t)random(4);
+            const float st[] = {0, 7, 12, -12, 5};
+            paramO2Semi = st[random(5)]; paramO2Det = rr(-12, 12);
+            o2Sync = chance(15);
+        }
+        if (chance(25)) { uniSel = 1; paramUniDet = rr(0.2f, 0.5f); }
+        if (chance(50)) paramLfoDepth = rr(0.05f, 0.2f);
+        if (chance(50)) paramDelayMix = rr(0.12f, 0.3f);
+        paramRevMix = rr(0.08f, 0.25f);
+    } else if (kind == 2) {                                  // PAD: lento, largo, com movimento
+        const Waveform w[] = {WAVE_SUPERSAW, WAVE_SAW, WAVE_TABLE, WAVE_TRIANGLE, WAVE_PULSE};
+        currentWave = pickWave(w);
+        paramAttack = rr(0.3f, 1.5f); paramDecay = rr(0.5f, 1.5f); paramSustain = rr(0.6f, 1.0f); paramRelease = rr(0.8f, 2.5f);
+        paramCutoff = rr(0.35f, 0.7f); paramReso = rr(0.0f, 0.3f);
+        paramFiltAmt = rr(0.0f, 0.3f); paramFiltAtt = rr(0.2f, 1.0f); paramFiltDec = rr(0.5f, 2.0f);
+        lfoShape = chance(70) ? (chance(50) ? 0 : 1) : lfoShape;
+        paramLfoRate = rr(0.1f, 1.0f); paramLfoDepth = rr(0.08f, 0.3f);
+        if (chance(50)) { uniSel = chance(50) ? 2 : 1; paramUniDet = rr(0.3f, 0.7f); }
+        if (currentWave == WAVE_TABLE) { wtBank = (uint8_t)random(4); paramWtPos = rr(0.0f, 0.6f); paramWtLfo = rr(0.2f, 0.6f); }
+        if (currentWave == WAVE_PULSE) paramPwmMod = rr(0.2f, 0.5f);
+        if (chance(55)) paramChoMix = rr(0.3f, 0.6f);
+        paramRevMix = rr(0.3f, 0.5f);
+        if (chance(30)) paramDelayMix = rr(0.1f, 0.25f);
+    } else if (kind == 3) {                                  // PLUCK: ataque seco, filtro que fecha rápido
+        const Waveform w[] = {WAVE_SAW, WAVE_SQUARE, WAVE_TRIANGLE, WAVE_SINE, WAVE_PULSE, WAVE_TABLE};
+        currentWave = pickWave(w);
+        paramAttack = rr(0.001f, 0.005f); paramDecay = rr(0.15f, 0.6f); paramSustain = rr(0.0f, 0.15f); paramRelease = rr(0.1f, 0.5f);
+        paramCutoff = rr(0.15f, 0.4f); paramReso = rr(0.1f, 0.5f);
+        paramFiltAmt = rr(0.5f, 0.9f); paramFiltAtt = 0.001f; paramFiltDec = rr(0.08f, 0.4f);
+        if (currentWave == WAVE_SINE || chance(25)) {
+            const float ra[] = {2.0f, 3.0f, 3.5f, 4.0f, 1.5f};
+            paramFmAmt = rr(0.2f, 0.5f); paramFmRatio = ra[random(5)]; paramFmDecMs = rr(60, 300); paramFmEnv = rr(0.5f, 1.0f);
+        }
+        if (chance(60)) paramDelayMix = rr(0.15f, 0.35f);
+        paramRevMix = rr(0.15f, 0.3f);
+    } else {                                                 // KEYS: piano elétrico/órgão
+        const Waveform w[] = {WAVE_SINE, WAVE_TRIANGLE, WAVE_TABLE, WAVE_SQUARE};
+        currentWave = pickWave(w);
+        paramAttack = rr(0.002f, 0.02f); paramDecay = rr(0.4f, 1.2f); paramSustain = rr(0.2f, 0.6f); paramRelease = rr(0.2f, 0.6f);
+        paramCutoff = rr(0.4f, 0.75f); paramReso = rr(0.0f, 0.25f);
+        paramFiltAmt = rr(0.1f, 0.4f); paramFiltAtt = rr(0.001f, 0.02f); paramFiltDec = rr(0.3f, 1.0f);
+        if (currentWave == WAVE_TABLE) wtBank = 2;           // ORGAN
+        if (currentWave != WAVE_TABLE && chance(60)) {
+            paramFmAmt = rr(0.1f, 0.35f); paramFmRatio = chance(50) ? 1.0f : 2.0f; paramFmDecMs = rr(200, 800); paramFmEnv = rr(0.6f, 1.0f);
+        }
+        if (chance(40)) { paramChoMix = rr(0.25f, 0.5f); paramChoRate = rr(0.4f, 1.2f); }
+        paramRevMix = rr(0.12f, 0.3f);
+    }
+
+    // temperos raros em qualquer tipo
+    if (chance(20) && kind != 0) filtMode = chance(50) ? 1 : 2;
+    if (chance(12) && (currentWave == WAVE_SINE || currentWave == WAVE_TRIANGLE)) paramFold = rr(0.2f, 0.5f);
+    if (chance(8)) { paramCrMix = rr(0.3f, 0.6f); paramCrBits = rr(6.0f, 10.0f); paramCrRate = rr(1.0f, 4.0f); }
+    if (chance(8) && kind != 2) o2Ring = (paramO2Lvl > 0.0f);
+    if (currentWave == WAVE_SQUARE || currentWave == WAVE_PULSE) { if (chance(30)) paramPwmMod = rr(0.15f, 0.45f); }
+    if (currentWave == WAVE_TABLE && paramWtLfo == 0.0f) { wtBank = (wtBank > 3) ? 0 : wtBank; paramWtPos = rr(0.0f, 1.0f); }
+    if (filtSlope == 1 && paramReso > 0.45f) paramReso = 0.45f;     // 24 dB + muita ressonância apita
+
+    syncKnobsFromParams();
+    snprintf(presetMsg, sizeof(presetMsg), "Random: %s", RND_KIND[kind]);
+}
+
+void soundUndo() {
+    if (rndUndoState == 0) { snprintf(presetMsg, sizeof(presetMsg), "Nothing to undo"); return; }
+    SoundSnap cur;
+    soundCapture(cur);
+    soundRestore(rndSnap);
+    rndSnap = cur;                                   // tocar de novo refaz
+    rndUndoState = (rndUndoState == 1) ? 2 : 1;
+    snprintf(presetMsg, sizeof(presetMsg), (rndUndoState == 2) ? "Undone" : "Redone");
+}
+
 void drawPagePRE_static() {
     if (subPg[PAGE_PRE] == 1) { drawMapPage(); return; }
     if (nameEdit) { drawNameEditor(); return; }
     drawPresetSlots();
     drawPresetButtons();
     presetShowMsg();
-    tft.setTextSize(1);
-    tft.setTextColor(COL_MUTED);
-    tft.setCursor(8, 198);
-    tft.print("TAP SLOT TO LOAD. SAVE/FACTORY: TAP 2X");
 }
 
 void handleNameTouch(int tx, int ty, bool newPress) {
@@ -4850,6 +5017,7 @@ void handlePresetTouch(int tx, int ty, bool newPress) {
         int x, y; presetSlotXY(i, x, y);
         if (tx >= x && tx < x + PRE_SLOT_W && ty >= y && ty < y + PRE_SLOT_H) {
             saveArmUntil = 0; factArmUntil = 0;
+            rndUndoState = 0;                       // outro som carregado: o UNDO do random não vale mais
             presetLoadCore(i);
             presetRedrawUI();
             return;
@@ -4890,6 +5058,20 @@ void handlePresetTouch(int tx, int ty, bool newPress) {
     if (btnHit(btnPrePtn, tx, ty)) {
         presetLoadPattern = !presetLoadPattern;
         drawPresetButtons();
+        return;
+    }
+    if (btnHit(btnPreRnd, tx, ty)) {
+        saveArmUntil = 0; factArmUntil = 0;
+        soundRandomize();
+        drawPresetButtons();
+        presetShowMsg();
+        return;
+    }
+    if (btnHit(btnPreUndo, tx, ty)) {
+        saveArmUntil = 0; factArmUntil = 0;
+        soundUndo();
+        drawPresetButtons();
+        presetShowMsg();
         return;
     }
 }
@@ -5582,6 +5764,79 @@ TouchSlider *ALL_SLIDERS[] = {
 };
 
 // ============================================================================
+// TELA DE ABERTURA: números caindo (estilo Matrix) e o nome no meio (~3 s)
+// ============================================================================
+void bootSplash() {
+    const uint16_t G_HEAD = 0xD7FA, G_MID = 0x07E0, G_DIM = 0x0300, BLACK = 0x0000;
+    const int COLS = 40, ROWS = 24, CW = 8, CH = 10;
+    const int BX = 26, BY = 74, BW = 268, BH = 96;           // caixa do título
+    int16_t head[COLS];
+    uint8_t len[COLS], spd[COLS];
+    randomSeed(micros());
+    for (int c = 0; c < COLS; c++) {
+        head[c] = -(int16_t)random(0, ROWS);
+        len[c] = (uint8_t)random(6, 16);
+        spd[c] = (uint8_t)random(1, 4);
+    }
+    tft.fillScreen(BLACK);
+
+    const char *title = "TOBRI SYNTH";
+    const char *by1 = "desenvolvido por";
+    const char *by2 = "@t.obr.i  2026";
+    const int FRAMES = 100, TITLE_AT = 40;
+    for (int fr = 0; fr < FRAMES; fr++) {
+        bool box = (fr >= TITLE_AT);
+        if (fr == TITLE_AT) {
+            tft.fillRoundRect(BX, BY, BW, BH, 8, BLACK);
+            tft.drawRoundRect(BX, BY, BW, BH, 8, G_MID);
+            tft.drawRoundRect(BX + 2, BY + 2, BW - 4, BH - 4, 6, G_DIM);
+        }
+        if (box) {                                           // título "digitado", uma letra por quadro
+            int n = fr - TITLE_AT + 1;
+            int tl = (int)strlen(title);
+            tft.setTextSize(3);
+            tft.setTextColor(G_MID);
+            tft.setCursor(160 - tl * 9, BY + 16);
+            for (int k = 0; k < tl && k < n; k++) tft.print(title[k]);
+            if (n == tl + 2) {
+                tft.drawFastHLine(BX + 30, BY + 46, BW - 60, G_DIM);
+                tft.setTextSize(1);
+                tft.setTextColor(G_DIM + 0x0200);
+                tft.setCursor(160 - (int)strlen(by1) * 3, BY + 54);
+                tft.print(by1);
+                tft.setTextSize(2);
+                tft.setTextColor(G_HEAD);
+                tft.setCursor(160 - (int)strlen(by2) * 6, BY + 68);
+                tft.print(by2);
+            }
+            tft.setTextSize(1);
+        }
+        for (int c = 0; c < COLS; c++) {
+            if (fr % spd[c]) continue;
+            head[c]++;
+            int x = c * CW;
+            const int h = head[c];
+            const int rows[4] = {h - 1, h, h - (int)len[c] / 2, h - (int)len[c]};
+            for (int r : rows) {
+                if (r < 0 || r >= ROWS) continue;
+                int y = r * CH;
+                if (box && x + CW > BX && x < BX + BW && y + CH > BY && y < BY + BH) continue;
+                if (r == head[c] - (int)len[c]) { tft.fillRect(x, y, CW, CH, BLACK); continue; }
+                uint16_t col = (r == head[c]) ? G_HEAD : (r == head[c] - 1) ? G_MID : G_DIM;
+                tft.drawChar(x + 1, y + 1, (char)('0' + random(10)), col, BLACK, 1);
+            }
+            if (head[c] - (int)len[c] >= ROWS) {
+                head[c] = -(int16_t)random(0, 8);
+                len[c] = (uint8_t)random(6, 16);
+                spd[c] = (uint8_t)random(1, 4);
+            }
+        }
+        delay(30);
+    }
+    delay(400);
+}
+
+// ============================================================================
 // SETUP E LOOPS
 // ============================================================================
 void setup1() {
@@ -5602,6 +5857,7 @@ void setup1() {
     ts.begin(SPI1);
     ts.setRotation(1);
 
+    bootSplash();
     tft.fillScreen(COL_BG);
 
     presetBoot();
