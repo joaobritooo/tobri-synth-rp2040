@@ -61,7 +61,7 @@ def phys(name):
 
 # uso de cada pino no projeto: nome -> (grupo, função)
 USE = {
-    'GP2': ('enc', 'ENC CLK (A)'), 'GP3': ('enc', 'ENC DT (B)'), 'GP4': ('enc', 'ENC SW (botão)'),
+    'GP2': ('enc', 'ENC SW (botão)'), 'GP3': ('enc', 'ENC DT (B)'), 'GP4': ('enc', 'ENC CLK (A)'),
     'GP6': ('dac', 'I2S BCLK'), 'GP7': ('dac', 'I2S LRCLK / WSEL'), 'GP9': ('dac', 'I2S DIN'),
     'GP10': ('spi', 'SCK (tela + touch)'), 'GP11': ('spi', 'MOSI (tela + touch)'), 'GP12': ('touch', 'MISO (T_DO)'),
     'GP13': ('tft', 'TFT CS'), 'GP14': ('tft', 'TFT DC'), 'GP15': ('tft', 'TFT RESET'),
@@ -209,12 +209,12 @@ def encoder_bare(path):
     d.text((cx, cy), 'EC11', fill='white', font=font(30, True), anchor='mm')
     d.text((cx, cy + 105), 'vista por baixo', fill=(220, 222, 228), font=font(20), anchor='mm')
     fl = font(24, True, mono=True)
-    pins_a = [('A', cx - 70, 'GP2', 'enc'), ('C', cx, 'GND', 'gnd'), ('B', cx + 70, 'GP3', 'enc')]
-    pins_s = [('SW1', cx - 50, 'GP4', 'enc'), ('SW2', cx + 50, 'GND', 'gnd')]
+    pins_a = [('A', cx - 70, 'GP4', 'enc'), ('C', cx, 'GND', 'gnd'), ('B', cx + 70, 'GP3', 'enc')]
+    pins_s = [('SW1', cx - 50, 'GP2', 'enc'), ('SW2', cx + 50, 'GND', 'gnd')]
     px = 1060
     d.rounded_rectangle([px, 40, px + 380, H - 40], 18, fill=(22, 101, 52))
     d.text((px + 190, 72), 'Raspberry Pi Pico', fill='white', font=font(30, True), anchor='mm')
-    targets = {'GP2': 150, 'GP3': 220, 'GP4': 330, 'GND': 420}
+    targets = {'GP4': 150, 'GP3': 220, 'GP2': 330, 'GND': 420}
     for pin, ty in targets.items():
         d.ellipse([px - 26, ty - 12, px - 2, ty + 12], fill=(214, 178, 72), outline=(120, 90, 20), width=2)
         d.text((px + 14, ty), pin, fill='white', font=fl, anchor='lm')
@@ -318,7 +318,7 @@ def overview(path):
     bundle([(560, 330), (600, 330), (600, 600), (640, 600)], 'tft', 'GP10-15', (600, 470))
     bundle([(560, 400), (580, 400), (580, 880), (1000, 880), (1000, 700), (960, 700)], 'touch', 'GP12 GP17 GP21', (800, 880))
     bundle([(1060, 240), (1010, 240), (1010, 470), (960, 470)], 'dac', 'GP6 GP7 GP9', (1010, 380))
-    bundle([(1060, 760), (1030, 760), (1030, 560), (960, 560)], 'enc', 'GP2 GP3 GP4', (1110, 590))
+    bundle([(1060, 760), (1030, 760), (1030, 560), (960, 560)], 'enc', 'GP4 GP3 GP2', (1110, 590))
     bundle([(560, 860), (800, 860), (800, 820)], 'pwr', 'cabo USB', (680, 830))
     d.text((W / 2, H - 30), 'Cada cor = um grupo de fios. Os detalhes pino a pino estão nas páginas seguintes.',
            fill=(91, 100, 117), font=fs, anchor='mm')
@@ -390,7 +390,7 @@ def on_page(c, doc):
     c.line(18 * mm, 14 * mm, A4[0] - 18 * mm, 14 * mm)
     c.setFont('UI', 8)
     c.setFillColor(SUB)
-    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Esquema de ligação · firmware v6')
+    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Esquema de ligação · firmware v12')
     c.drawRightString(A4[0] - 18 * mm, 9.5 * mm, str(doc.page))
     c.restoreState()
 
@@ -407,7 +407,7 @@ def build():
                     ['spi', 'SPI1 compartilhado (tela + touch)', 'GP10 SCK, GP11 MOSI'],
                     ['touch', 'Touch XPT2046', 'GP12 MISO, GP17 T_CS, GP21 T_IRQ'],
                     ['dac', 'DAC I2S', 'GP6 BCLK, GP7 LRCLK, GP9 DIN'],
-                    ['enc', 'Encoder', 'GP2 CLK, GP3 DT, GP4 SW'],
+                    ['enc', 'Encoder', 'GP4 CLK, GP3 DT, GP2 SW (botão)'],
                     ['pwr', 'Alimentação', 'VBUS (5 V) para o DAC, 3V3(OUT) para tela e encoder'],
                     ['gnd', 'Terra', 'qualquer GND do Pico, comum a todos']], [12 * mm, 62 * mm, CW - 74 * mm], swatch_col=0))
     s.append(PageBreak())
@@ -430,7 +430,7 @@ def build():
         ('pwr', 'DAC UDA1334A', 'VIN', 'VBUS'), ('gnd', 'DAC UDA1334A', 'GND', 'GND'),
         ('dac', 'DAC UDA1334A', 'BCLK', 'GP6'), ('dac', 'DAC UDA1334A', 'WSEL (LRCLK)', 'GP7'),
         ('dac', 'DAC UDA1334A', 'DIN', 'GP9'),
-        ('enc', 'Encoder', 'CLK / A', 'GP2'), ('enc', 'Encoder', 'DT / B', 'GP3'), ('enc', 'Encoder', 'SW', 'GP4'),
+        ('enc', 'Encoder', 'CLK / A', 'GP4'), ('enc', 'Encoder', 'DT / B', 'GP3'), ('enc', 'Encoder', 'SW', 'GP2'),
         ('gnd', 'Encoder', 'GND / C / SW2', 'GND'), ('pwr', 'Encoder', '+ (só no KY-040)', '3V3(OUT)'),
     ]
     for g, m, mp, pp in conn:
@@ -489,12 +489,12 @@ def build():
     s.append(Paragraph('Encoder sem placa (EC11 puro)', st_h2))
     s.append(img(encoder_bare(os.path.join(FIG, 'enc_bare.png')), CW))
     s.append(Paragraph('Na fileira de 3 pinos, o do <b>meio (C)</b> é o comum e vai no GND. Na fileira de 2 pinos fica '
-                       'o botão: um lado no GP4 e o outro no GND.', st_body))
+                       'o botão: um lado no GP2 e o outro no GND.', st_body))
     s.append(CondPageBreak(90 * mm))
     s.append(Paragraph('Módulo KY-040 (com placa)', st_h2))
     s.append(img(module_diagram(os.path.join(FIG, 'enc_ky.png'), 'KY-040',
                                 ['CLK', 'DT', 'SW', '+', 'GND'],
-                                [('CLK', 'GP2', 'enc', None), ('DT', 'GP3', 'enc', None), ('SW', 'GP4', 'enc', 'botão'),
+                                [('CLK', 'GP4', 'enc', None), ('DT', 'GP3', 'enc', None), ('SW', 'GP2', 'enc', 'botão'),
                                  ('+', '3V3(OUT)', 'pwr', 'nunca 5 V'), ('GND', 'GND', 'gnd', None)],
                                 mod_note='encoder com placa', mod_color=(120, 60, 20)), CW))
     s.append(tip('O + do KY-040 vai no <b>3,3 V</b>, nunca no 5 V: os pull-ups da placa levariam 5 V para os pinos do '

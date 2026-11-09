@@ -311,7 +311,7 @@ def on_page(c, doc):
     c.line(18 * mm, 14 * mm, A4[0] - 18 * mm, 14 * mm)
     c.setFont('UI', 8)
     c.setFillColor(SUB)
-    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v11')
+    c.drawString(18 * mm, 9.5 * mm, 'Tobri Synth · Manual de uso · firmware v12')
     c.drawRightString(A4[0] - 18 * mm, 9.5 * mm, str(doc.page))
     c.restoreState()
 
@@ -331,7 +331,7 @@ def on_cover(c, doc):
     c.setFont('UI', 10.5)
     y = A4[1] - 74 * mm
     for line in ('Sintetizador polifônico de 4 vozes com RP2040, tela touch de 3,2"',
-                 'USB MIDI e encoder · firmware v11',
+                 'USB MIDI e encoder · firmware v12',
                  '7 abas, 23 telas: osciladores, wavetable, FM, envelopes, filtro, LFO,',
                  'matriz de modulação, sequenciador de 16 passos, 4 efeitos e 8 presets'):
         c.drawString(20 * mm, y, line)
@@ -727,7 +727,7 @@ def build():
         ['Toque fora do lugar', 'Calibre o touch (seção 10).'],
         ['Estalos / falhas no áudio', 'CPU alta: confira MOD p3 (VOICE/GLIDE). Reduza o UNISON ou desligue efeitos que não usa.'],
         ['Girar o encoder dá PLAY/STOP', 'Na v10 isso é filtrado. Se ainda acontecer, abra MOD &gt; VOICE/GLIDE: '
-                                         'girando, só CLK e DT podem mudar. Se o SW muda junto, o fio do GP4 está num '
+                                         'girando, só CLK e DT podem mudar. Se o SW muda junto, o fio do botão (GP2) está num '
                                          'pino de giro (A ou B) ou o GND do encoder está solto; confira a ligação.'],
         ['O encoder gira ao contrário', 'No código, mude <font name="Mono">ENC_INVERT</font> e regrave.'],
         ['O SEQ não anda', 'Em MIDI SYNC ele espera o clock da DAW. Volte para INT CLOCK em SEQ p2.'],

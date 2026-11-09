@@ -17,6 +17,7 @@
    v7: toque na aba ativa abre o MENU das subpáginas (com nomes). ENV agora tem
          AMP / FILTER ENV / PITCH ENV; FLT = FILTER (cutoff, reso, drive) + MODE
          (tipo, inclinação, wavefolder); MOD = LFO / MATRIX / VOICES
+   v12: encoder com giro em GP4/GP3 e botão em GP2 (como está ligado na placa)
    v11: presets de fábrica minimal / deep tech (ROLLER, DUB CHORD, HYPNO PLCK, RUMBLE,
          BLIP, DEEP PAD, ACID TOOL, METAL PERC), cada um com groove próprio em Sol menor
    v10: botão do encoder ignora "apertos" que acontecem enquanto o eixo gira (ruído do
@@ -53,7 +54,8 @@ const int I2S_BCLK_PIN = 6;
 const int I2S_DATA_PIN = 9;
 I2S i2s(OUTPUT);
 
-const int ENC_CLK = 2, ENC_DT = 3, ENC_SW = 4;
+// encoder: giro em GP4 (CLK/A) e GP3 (DT/B), botão em GP2 (igual à montagem do protótipo)
+const int ENC_CLK = 4, ENC_DT = 3, ENC_SW = 2;
 
 const int TFT_SCK = 10, TFT_MOSI = 11, TFT_CS = 13, TFT_DC = 14, TFT_RST = 15;
 Adafruit_ILI9341 tft = Adafruit_ILI9341(&SPI1, TFT_DC, TFT_CS, TFT_RST);
@@ -2672,7 +2674,7 @@ void __not_in_flash_func(encoderISR)() {
 void encoderBegin() {
     pinMode(ENC_CLK, INPUT_PULLUP);
     pinMode(ENC_DT, INPUT_PULLUP);
-    pinMode(ENC_SW, INPUT_PULLUP);       // botão entre GP4 e GND
+    pinMode(ENC_SW, INPUT_PULLUP);       // botão entre GP2 e GND
     attachInterrupt(digitalPinToInterrupt(ENC_CLK), encoderISR, CHANGE);
     attachInterrupt(digitalPinToInterrupt(ENC_DT),  encoderISR, CHANGE);
 }

@@ -62,7 +62,7 @@ Sintetizador polifônico de 4 vozes num Raspberry Pi Pico (RP2040). Tem tela tou
 | Display ILI9341 (SPI1) | GP10 SCK, GP11 MOSI, GP13 CS, GP14 DC, GP15 RESET, VCC e LED no 3V3 |
 | Touch XPT2046 | GP10 T_CLK, GP11 T_DIN, GP12 T_DO, GP17 T_CS, GP21 T_IRQ |
 | DAC UDA1334A (I2S) | GP6 BCLK, GP7 WSEL/LRCLK, GP9 DIN, VIN no VBUS (5 V) |
-| Encoder | GP2 CLK/A, GP3 DT/B, GP4 SW, comum no GND |
+| Encoder | GP4 CLK/A, GP3 DT/B, GP2 SW (botão), comum no GND |
 
 O SDO (MISO) da tela fica desligado. O LRCLK precisa estar no pino seguinte ao BCLK. Os detalhes estão no PDF de ligação.
 
